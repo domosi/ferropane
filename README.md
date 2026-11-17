@@ -1,6 +1,23 @@
 # FerroPane
 
+[![Build & Publish macOS Release](https://github.com/domosi/ferropane/actions/workflows/release.yml/badge.svg)](https://github.com/domosi/ferropane/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/domosi/ferropane?include_prereleases&label=Download%20macOS%20App)](https://github.com/domosi/ferropane/releases)
+
 **FerroPane** is a high-speed, Total Commander-inspired dual-pane file manager for macOS built on a **Rust systems core (`cdylib`)** and a **pluggable 120Hz Flutter Desktop frontend** (supporting both **macOS Desktop UI** and **Material 3 UI**).
+
+---
+
+## Download (No Build Required)
+
+Grab the pre-built macOS Apple Silicon (`M1` / `M2` / `M3` / `M4`) app directly from [**GitHub Releases**](https://github.com/domosi/ferropane/releases):
+
+* **[Download `FerroPane-macos-arm64.dmg`](https://github.com/domosi/ferropane/releases/latest/download/FerroPane-macos-arm64.dmg)** — Open the `.dmg` and drag `FerroPane.app` into `Applications`.
+* **[Download `FerroPane-macos-arm64.zip`](https://github.com/domosi/ferropane/releases/latest/download/FerroPane-macos-arm64.zip)** — Portable `.app` bundle archive.
+
+> **macOS Gatekeeper Note (First Launch):** Because this open-source build is ad-hoc signed without an Apple Developer ID certificate, clear the quarantine attribute once after copying to `/Applications`:
+> ```zsh
+> xattr -cr /Applications/FerroPane.app
+> ```
 
 ---
 

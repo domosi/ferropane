@@ -88,6 +88,11 @@ EOF
 
 codesign --force --deep --sign - "$APP_BUNDLE"
 
+if [[ "${1:-}" == "--ci" ]]; then
+  echo "==> Built app bundle at $APP_BUNDLE"
+  exit 0
+fi
+
 echo "==> Installing to /Applications/FerroPane.app..."
 rm -rf "/Applications/TC-Mac.app" "/Applications/FerroPane.app"
 cp -R "$APP_BUNDLE" "/Applications/FerroPane.app"
