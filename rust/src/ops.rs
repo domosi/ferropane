@@ -241,18 +241,62 @@ pub fn delete_items(sources: &[String], use_trash: bool) -> FileOpResult {
     }
 
     if use_trash {
-        match trash::delete_all(sources) {
+        let mut non_symlinks: Vec<String> = Vec::new();
+        let mut removed_symlinks = 0usize;
+
+        for src_str in sources {
+            let p = PathBuf::from(src_str);
+            let is_symlink = fs::symlink_metadata(&p)
+                .map(|m| m.file_type().is_symlink())
+                .unwrap_or(false);
+            if is_symlink {
+                match fs::remove_file(&p) {
+                    Ok(()) => removed_symlinks += 1,
+                    Err(err) => {
+                        return FileOpResult {
+                            ok: false,
+                            processed_count: removed_symlinks,
+                            message: format!("Failed to unlink symlink {}: {}", p.display(), err),
+                        };
+                    }
+                }
+            } else {
+                non_symlinks.push(src_str.clone());
+            }
+        }
+
+        if non_symlinks.is_empty() {
+            return FileOpResult {
+                ok: true,
+                processed_count: removed_symlinks,
+                message: format!("Removed {} symlink(s)", removed_symlinks),
+            };
+        }
+
+        #[cfg(target_os = "macos")]
+        let trash_res = {
+            use trash::macos::{DeleteMethod, TrashContextExtMacos};
+            let mut ctx = trash::TrashContext::default();
+            ctx.set_delete_method(DeleteMethod::NsFileManager);
+            ctx.delete_all(&non_symlinks)
+        };
+
+        #[cfg(not(target_os = "macos"))]
+        let trash_res = trash::delete_all(&non_symlinks);
+
+        match trash_res {
             Ok(()) => {
+                let total = removed_symlinks + non_symlinks.len();
                 return FileOpResult {
                     ok: true,
-                    processed_count: sources.len(),
-                    message: format!("Moved {} item(s) to Trash", sources.len()),
+                    processed_count: total,
+                    message: format!("Moved {} item(s) to Trash", total),
                 };
             }
             Err(err) => {
                 return FileOpResult {
                     ok: false,
-                    processed_count: 0,
+                    processed_count: removed_symlinks,
                     message: format!("Trash failed: {}", err),
                 };
             }
