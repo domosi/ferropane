@@ -13,6 +13,10 @@
   * `F7 MkDir`: Create directory (including nested paths).
   * `F8 Trash` / `Shift+F8 Delete`: Native macOS Trash (`NSFileManager.trashItem` via `trash`) or permanent POSIX removal.
 * **Memory-Mapped `F3` Lister (`rust/src/lister.rs`):** Opens multi-gigabyte files in `< 1 ms` via `memmap2::Mmap` with instant Text (`1`) and 16-byte Hex (`3`) slice rendering.
+* **Recursive Folder Deep Compare & Synchronize (`rust/src/compare.rs`):**
+  * Press `⌘D` (or click **Compare** in the toolbar) to recursively compare the active Left and Right directory trees.
+  * Classifies items into `→ Only Left`, `≠ Different` (`L newer` / `R newer`), `← Only Right`, and `= Identical`, with optional 64 KB buffered **Byte-by-Byte Content Verification**.
+  * Supports 1-click single-file sync and batch synchronization (`Sync Left → Right` / `Sync Right ← Left`).
 * **Native macOS LaunchServices ("Open With…") & Quick Look (`macos/Runner/MainFlutterWindow.swift`):**
   * Queries `NSWorkspace.shared.urlsForApplications(toOpen:)` for compatible macOS `.app` bundles.
   * Exposes 3 workflows: **`⇧Enter` / `⌘O` Numbered App Palette (`1`–`9`)**, **`Right-Click` Context Menu**, and **Smart `F4 Open With ▾`** (with per-extension remembered editor support).
@@ -40,6 +44,7 @@
 | `⌘T` / `⌘W` | New folder tab / Close active tab |
 | `⌘⇧.` | Toggle hidden dotfiles (`.*`) |
 | `⌘Y` / `Option+Space` | Toggle native macOS Quick Look (`QLPreviewPanel`) |
+| `⌘D` | Open **Folder Deep Compare & Synchronize** modal |
 | `F3` / `⌘3` | Open built-in `mmap` Lister (`1`: Text, `3`: Hex) |
 | `F4` / `⇧F4` / `⌘4` | Smart Open With (opens remembered editor for `.ext` or app picker) |
 | `F5` / `⌘5` | Copy selected items (APFS `clonefile`/`copyfile`) |
