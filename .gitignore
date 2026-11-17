@@ -1,0 +1,18 @@
+# Flutter / Dart build artifacts
+.dart_tool/
+.packages
+build/
+flutter_*.png
+linked_*.dsym
+unlinked*.dsym
+
+# Rust build artifacts
+rust/target/
+
+# macOS / Xcode
+.DS_Store
+**/Pods/
+**/Podfile.lock
+*.xcuserdata
+*.xcworkspace/xcuserdata/
+macos/Flutter/ephemeral/
