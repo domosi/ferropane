@@ -19,7 +19,7 @@ permissions:
 jobs:
   build-macos:
     name: Build FerroPane (macOS Apple Silicon)
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             TAG="${{ github.ref_name }}"
           else
-            TAG="latest"
+            TAG="v1.0.0"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
