@@ -58,6 +58,7 @@ Grab the pre-built macOS Apple Silicon (`M1` / `M2` / `M3` / `M4`) app directly 
 | `*` / `+` | Invert selection / Select by wildcard pattern |
 | `/` or `⌘F` | Toggle inline Quick Filter bar |
 | `⌘G` | Go to directory path |
+| `⌘B` / `Ctrl+D` | Open **★ Directory Hotlist & macOS Favorites** (`1`–`9` instant jump, `P` to pin/unpin) |
 | `⌘T` / `⌘W` | New folder tab / Close active tab |
 | `⌘⇧.` | Toggle hidden dotfiles (`.*`) |
 | `⌘Y` / `Option+Space` | Toggle native macOS Quick Look (`QLPreviewPanel`) |

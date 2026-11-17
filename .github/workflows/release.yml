@@ -73,7 +73,7 @@ jobs:
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             TAG="${{ github.ref_name }}"
           else
-            TAG="v1.0.0"
+            TAG="v1.1.0"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
