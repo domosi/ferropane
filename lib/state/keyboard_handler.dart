@@ -34,6 +34,7 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
     final ctrl = widget.controller;
     final key = event.logicalKey;
     final isMeta = HardwareKeyboard.instance.isMetaPressed;
+    final isControl = HardwareKeyboard.instance.isControlPressed;
     final isShift = HardwareKeyboard.instance.isShiftPressed;
     final isAlt = HardwareKeyboard.instance.isAltPressed;
 
@@ -48,10 +49,64 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
     if (ctrl.activeDialog != ActiveDialog.none) {
       if (key == LogicalKeyboardKey.escape ||
           (ctrl.activeDialog == ActiveDialog.lister &&
-              key == LogicalKeyboardKey.f3)) {
+              key == LogicalKeyboardKey.f3) ||
+          (ctrl.activeDialog == ActiveDialog.favoritesHotlist &&
+              ((isMeta && key == LogicalKeyboardKey.keyB) ||
+                  (isControl && key == LogicalKeyboardKey.keyD)))) {
         ctrl.closeDialog();
         _rootFocusNode.requestFocus();
         return KeyEventResult.handled;
+      }
+      if (ctrl.activeDialog == ActiveDialog.favoritesHotlist) {
+        if (key == LogicalKeyboardKey.arrowDown) {
+          ctrl.moveFavoritesSelection(1);
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowUp) {
+          ctrl.moveFavoritesSelection(-1);
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.tab) {
+          ctrl.toggleFavoritesTargetSide();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.keyP ||
+            key == LogicalKeyboardKey.numpadAdd ||
+            (key == LogicalKeyboardKey.equal && isShift)) {
+          ctrl.togglePinCurrentFolder();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter) {
+          ctrl.launchSelectedFavorite(inNewTab: isShift);
+          _rootFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        final favDigitMap = <LogicalKeyboardKey, int>{
+          LogicalKeyboardKey.digit1: 0,
+          LogicalKeyboardKey.digit2: 1,
+          LogicalKeyboardKey.digit3: 2,
+          LogicalKeyboardKey.digit4: 3,
+          LogicalKeyboardKey.digit5: 4,
+          LogicalKeyboardKey.digit6: 5,
+          LogicalKeyboardKey.digit7: 6,
+          LogicalKeyboardKey.digit8: 7,
+          LogicalKeyboardKey.digit9: 8,
+          LogicalKeyboardKey.numpad1: 0,
+          LogicalKeyboardKey.numpad2: 1,
+          LogicalKeyboardKey.numpad3: 2,
+          LogicalKeyboardKey.numpad4: 3,
+          LogicalKeyboardKey.numpad5: 4,
+          LogicalKeyboardKey.numpad6: 5,
+          LogicalKeyboardKey.numpad7: 6,
+          LogicalKeyboardKey.numpad8: 7,
+          LogicalKeyboardKey.numpad9: 8,
+        };
+        if (favDigitMap.containsKey(key)) {
+          ctrl.launchFavoriteAtIndex(favDigitMap[key]!, inNewTab: isShift);
+          _rootFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
       }
       if (ctrl.activeDialog == ActiveDialog.openWithPalette) {
         if (key == LogicalKeyboardKey.arrowDown) {
@@ -177,6 +232,10 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         ctrl.openGotoPathDialog();
         return KeyEventResult.handled;
       }
+      if (key == LogicalKeyboardKey.keyB) {
+        ctrl.openFavoritesHotlist();
+        return KeyEventResult.handled;
+      }
       if (key == LogicalKeyboardKey.keyD) {
         ctrl.openDeepCompare();
         return KeyEventResult.handled;
@@ -233,6 +292,12 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         ctrl.openDeleteDialog(useTrash: !isShift);
         return KeyEventResult.handled;
       }
+    }
+
+    // Total Commander classic Ctrl+D Directory Hotlist shortcut
+    if (isControl && !isMeta && key == LogicalKeyboardKey.keyD) {
+      ctrl.openFavoritesHotlist();
+      return KeyEventResult.handled;
     }
 
     // Standard Total Commander navigation & function keys

@@ -13,6 +13,7 @@ enum ActiveDialog {
   none,
   lister,
   openWithPalette,
+  favoritesHotlist,
   deepCompare,
   copyConfirm,
   moveConfirm,
@@ -115,8 +116,13 @@ class CommanderController extends ChangeNotifier {
   bool compareShowOnlyRight = true;
   bool compareShowIdentical = false;
 
+  // ★ Directory Hotlist & macOS Favorites state
+  final List<String> customFavorites = [];
+  PaneSide favoritesTargetSide = PaneSide.left;
+  int favoritesSelectedIndex = 0;
+
   String statusBanner =
-      'Ready — Tab: switch pane | Space: select | ⇧Enter / F4: Open With';
+      'Ready — Tab: switch pane | Space: select | ⌘B: Favorites | ⇧Enter / F4: Open With';
   bool filterBarVisible = false;
 
   static const double rowExtent = 24.0;
@@ -128,6 +134,7 @@ class CommanderController extends ChangeNotifier {
        _themeId = initialSession.themeId,
        showHidden = initialSession.showHidden {
     preferredAppsByExt.addAll(initialSession.preferredAppsByExt);
+    customFavorites.addAll(initialSession.favoriteFolders);
     for (final path in initialSession.leftTabs) {
       leftTabs.add(_createTab(path));
     }
@@ -203,6 +210,7 @@ class CommanderController extends ChangeNotifier {
         activeRightTab: activeRightTabIndex,
         showHidden: showHidden,
         preferredAppsByExt: Map<String, String>.from(preferredAppsByExt),
+        favoriteFolders: List<String>.from(customFavorites),
       ),
     );
   }
@@ -539,12 +547,193 @@ class CommanderController extends ChangeNotifier {
       case ActiveDialog.openWithPalette:
         launchSelectedOpenWithApp();
         break;
+      case ActiveDialog.favoritesHotlist:
+        launchSelectedFavorite();
+        break;
       case ActiveDialog.deepCompare:
         closeDialog();
         break;
       case ActiveDialog.none:
         break;
     }
+  }
+
+  // --- ★ Directory Hotlist & macOS Favorites (⌘B / Ctrl+D) ---
+  bool isPathPinned(String path) {
+    return customFavorites.contains(path);
+  }
+
+  List<FavoriteFolderItem> get favoriteHotlistItems {
+    final items = <FavoriteFolderItem>[];
+    final seenPaths = <String>{};
+
+    void addIfValid(
+      String label,
+      String path,
+      String category, {
+      bool isCustom = false,
+    }) {
+      if (path.isEmpty || seenPaths.contains(path)) return;
+      try {
+        if (Directory(path).existsSync()) {
+          seenPaths.add(path);
+          items.add(
+            FavoriteFolderItem(
+              label: label,
+              path: path,
+              category: category,
+              isCustomPinned: isCustom,
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    // 1. User-Pinned Custom Favorites
+    for (final pinnedPath in customFavorites) {
+      final segs = pinnedPath.split('/').where((s) => s.isNotEmpty).toList();
+      final name = segs.isEmpty
+          ? '/'
+          : (segs.length >= 2
+                ? '${segs[segs.length - 2]}/${segs.last}'
+                : segs.last);
+      addIfValid(name, pinnedPath, 'Pinned Folders', isCustom: true);
+    }
+
+    // 2. Standard macOS Finder Favorites
+    final home = Platform.environment['HOME'] ?? '/Users';
+    addIfValid('Home (~)', home, 'macOS Favorites');
+    addIfValid('Desktop', '$home/Desktop', 'macOS Favorites');
+    addIfValid('Documents', '$home/Documents', 'macOS Favorites');
+    addIfValid('Downloads', '$home/Downloads', 'macOS Favorites');
+    addIfValid('Applications', '/Applications', 'macOS Favorites');
+    addIfValid('Developer (~/dev)', '$home/dev', 'macOS Favorites');
+    addIfValid(
+      'iCloud Drive',
+      '$home/Library/Mobile Documents/com~apple~CloudDocs',
+      'macOS Favorites',
+    );
+
+    // 3. Mounted Volumes (/ and /Volumes/*)
+    addIfValid('Macintosh HD (/)', '/', 'Volumes & Drives');
+    try {
+      final volDir = Directory('/Volumes');
+      if (volDir.existsSync()) {
+        for (final entity in volDir.listSync(followLinks: false)) {
+          final name = entity.path.split('/').last;
+          if (name.isEmpty || name.startsWith('.') || name == 'Macintosh HD') {
+            continue;
+          }
+          addIfValid(name, entity.path, 'Volumes & Drives');
+        }
+      }
+    } catch (_) {}
+
+    return items;
+  }
+
+  void openFavoritesHotlist({PaneSide? side}) {
+    closeContextMenu();
+    if (side != null) {
+      activeSide = side;
+    }
+    favoritesTargetSide = side ?? activeSide;
+    final items = favoriteHotlistItems;
+    final currentPath = tabFor(favoritesTargetSide).summary.currentPath;
+    final matchIdx = items.indexWhere((f) => f.path == currentPath);
+    favoritesSelectedIndex = matchIdx >= 0 ? matchIdx : 0;
+    activeDialog = ActiveDialog.favoritesHotlist;
+    notifyListeners();
+  }
+
+  void toggleFavoritesTargetSide() {
+    favoritesTargetSide = favoritesTargetSide == PaneSide.left
+        ? PaneSide.right
+        : PaneSide.left;
+    notifyListeners();
+  }
+
+  void togglePinFolder(String path) {
+    if (path.isEmpty) return;
+    if (customFavorites.contains(path)) {
+      customFavorites.remove(path);
+      statusBanner = 'Unpinned $path from Favorites';
+    } else {
+      customFavorites.insert(0, path);
+      statusBanner = '★ Pinned $path to Favorites';
+    }
+    persistSession();
+    final items = favoriteHotlistItems;
+    if (items.isEmpty) {
+      favoritesSelectedIndex = 0;
+    } else {
+      favoritesSelectedIndex = favoritesSelectedIndex.clamp(
+        0,
+        items.length - 1,
+      );
+    }
+    notifyListeners();
+  }
+
+  void togglePinCurrentFolder({PaneSide? side}) {
+    final target = side ??
+        (activeDialog == ActiveDialog.favoritesHotlist
+            ? favoritesTargetSide
+            : activeSide);
+    final path = tabFor(target).summary.currentPath;
+    togglePinFolder(path);
+  }
+
+  void moveFavoritesSelection(int delta) {
+    final items = favoriteHotlistItems;
+    if (items.isEmpty) return;
+    favoritesSelectedIndex = (favoritesSelectedIndex + delta).clamp(
+      0,
+      items.length - 1,
+    );
+    notifyListeners();
+  }
+
+  void launchFavoriteAtIndex(
+    int index, {
+    bool inNewTab = false,
+    bool inOtherPane = false,
+  }) {
+    final items = favoriteHotlistItems;
+    if (index < 0 || index >= items.length) return;
+    favoritesSelectedIndex = index;
+    launchSelectedFavorite(inNewTab: inNewTab, inOtherPane: inOtherPane);
+  }
+
+  void launchSelectedFavorite({
+    bool inNewTab = false,
+    bool inOtherPane = false,
+  }) {
+    final items = favoriteHotlistItems;
+    if (items.isEmpty) {
+      closeDialog();
+      return;
+    }
+    final idx = favoritesSelectedIndex.clamp(0, items.length - 1);
+    final chosen = items[idx];
+    final targetSide = inOtherPane
+        ? (favoritesTargetSide == PaneSide.left
+              ? PaneSide.right
+              : PaneSide.left)
+        : favoritesTargetSide;
+
+    activeDialog = ActiveDialog.none;
+    closeContextMenu();
+    activeSide = targetSide;
+
+    if (inNewTab) {
+      addNewTab(side: targetSide, path: chosen.path);
+      statusBanner = 'Opened ★ ${chosen.label} in new tab (${chosen.path})';
+    } else {
+      navigateToPath(chosen.path, side: targetSide);
+      statusBanner = 'Opened ★ ${chosen.label} (${chosen.path})';
+    }
+    notifyListeners();
   }
 
   // --- Deep Compare Folders (Synchronize Dirs) ---

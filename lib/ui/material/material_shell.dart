@@ -106,6 +106,20 @@ class MaterialCommanderShell extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 5),
+                  ActionChip(
+                    avatar: Icon(
+                      Icons.star_rounded,
+                      size: 15,
+                      color: p.selectedText,
+                    ),
+                    label: const Text(
+                      'Favorites',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => controller.openFavoritesHotlist(),
+                  ),
+                  const SizedBox(width: 5),
                   FilterChip(
                     selected: controller.showHidden,
                     label: const Text(

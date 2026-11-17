@@ -12,6 +12,7 @@ class SessionData {
   final int activeRightTab;
   final bool showHidden;
   final Map<String, String> preferredAppsByExt;
+  final List<String> favoriteFolders;
 
   const SessionData({
     required this.uiFramework,
@@ -22,6 +23,7 @@ class SessionData {
     required this.activeRightTab,
     required this.showHidden,
     this.preferredAppsByExt = const {},
+    this.favoriteFolders = const [],
   });
 
   factory SessionData.defaults() {
@@ -38,6 +40,7 @@ class SessionData {
       activeRightTab: 0,
       showHidden: false,
       preferredAppsByExt: const {},
+      favoriteFolders: const [],
     );
   }
 
@@ -50,6 +53,7 @@ class SessionData {
     'active_right_tab': activeRightTab,
     'show_hidden': showHidden,
     'preferred_apps_by_ext': preferredAppsByExt,
+    'favorite_folders': favoriteFolders,
   };
 
   static List<String> _sanitizePaths(
@@ -84,6 +88,14 @@ class SessionData {
       }
     }
 
+    final rawFavs = json['favorite_folders'] as List<dynamic>?;
+    final favs = rawFavs == null
+        ? const <String>[]
+        : rawFavs
+              .map((e) => e.toString())
+              .where((s) => s.isNotEmpty && Directory(s).existsSync())
+              .toList(growable: false);
+
     return SessionData(
       uiFramework: UiFrameworkMode.fromKey(json['ui_framework'] as String?),
       themeId: TcThemeId.fromKey(json['theme_id'] as String?),
@@ -99,6 +111,7 @@ class SessionData {
       ),
       showHidden: json['show_hidden'] as bool? ?? false,
       preferredAppsByExt: prefs,
+      favoriteFolders: favs,
     );
   }
 }

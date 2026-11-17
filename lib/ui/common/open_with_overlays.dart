@@ -548,6 +548,23 @@ class FileRowContextMenuOverlay extends StatelessWidget {
                     controller.revealFocusedInFinder();
                   },
                 ),
+                if (entry.isDir && !entry.isParent)
+                  menuRow(
+                    label: controller.isPathPinned(entry.fullPath)
+                        ? '★ Unpin Folder from Favorites'
+                        : '★ Pin Folder to Favorites',
+                    labelColor: p.selectedText,
+                    onTap: () {
+                      controller.closeContextMenu();
+                      controller.togglePinFolder(entry.fullPath);
+                    },
+                  ),
+                menuRow(
+                  label: '★ Directory Hotlist & Favorites…',
+                  shortcut: '⌘B',
+                  labelColor: p.primaryAccent,
+                  onTap: () => controller.openFavoritesHotlist(),
+                ),
                 menuRow(
                   label: 'Deep Compare Folders…',
                   shortcut: '⌘D',

@@ -307,6 +307,20 @@ class DirCompareResultModel {
   }
 }
 
+class FavoriteFolderItem {
+  final String label;
+  final String path;
+  final String category; // 'Pinned', 'macOS Favorites', 'Volumes'
+  final bool isCustomPinned;
+
+  const FavoriteFolderItem({
+    required this.label,
+    required this.path,
+    required this.category,
+    this.isCustomPinned = false,
+  });
+}
+
 String formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';
   final kb = bytes / 1024.0;

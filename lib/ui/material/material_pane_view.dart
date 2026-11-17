@@ -232,6 +232,52 @@ class MaterialPaneView extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
+          InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () => controller.openFavoritesHotlist(side: side),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: controller.isPathPinned(summary.currentPath)
+                    ? p.selectedRowBg
+                    : p.paneBgOdd,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: controller.isPathPinned(summary.currentPath)
+                      ? p.selectedText
+                      : p.primaryAccent.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    controller.isPathPinned(summary.currentPath)
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    size: 14,
+                    color: controller.isPathPinned(summary.currentPath)
+                        ? p.selectedText
+                        : p.primaryAccent,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    'Favs ▾',
+                    style: TextStyle(
+                      fontFamily: 'Menlo',
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: controller.isPathPinned(summary.currentPath)
+                          ? p.selectedText
+                          : p.primaryAccent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             tooltip: 'Edit Path (Cmd+G)',
             visualDensity: VisualDensity.compact,

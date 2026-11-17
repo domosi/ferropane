@@ -250,6 +250,51 @@ class MacosPaneView extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           GestureDetector(
+            onTap: () => controller.openFavoritesHotlist(side: side),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: controller.isPathPinned(summary.currentPath)
+                    ? p.selectedRowBg
+                    : p.paneBgOdd,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: controller.isPathPinned(summary.currentPath)
+                      ? p.selectedText
+                      : p.primaryAccent.withValues(alpha: 0.45),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    controller.isPathPinned(summary.currentPath)
+                        ? CupertinoIcons.star_fill
+                        : CupertinoIcons.star,
+                    size: 11.5,
+                    color: controller.isPathPinned(summary.currentPath)
+                        ? p.selectedText
+                        : p.primaryAccent,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Favs ▾',
+                    style: TextStyle(
+                      color: controller.isPathPinned(summary.currentPath)
+                          ? p.selectedText
+                          : p.primaryAccent,
+                      fontSize: 10.5,
+                      fontFamily: 'Menlo',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 5),
+          GestureDetector(
             onTap: () {
               controller.setActiveSide(side);
               controller.openGotoPathDialog();

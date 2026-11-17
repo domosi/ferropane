@@ -124,6 +124,14 @@ class MacosCommanderShell extends StatelessWidget {
                     ),
                   ),
                   toolBtn(
+                    icon: CupertinoIcons.star_fill,
+                    label: 'Favorites',
+                    active:
+                        controller.activeDialog ==
+                        ActiveDialog.favoritesHotlist,
+                    onPressed: () => controller.openFavoritesHotlist(),
+                  ),
+                  toolBtn(
                     icon: CupertinoIcons.eye_fill,
                     label: 'Dotfiles',
                     active: controller.showHidden,
