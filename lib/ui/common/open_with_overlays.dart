@@ -548,6 +548,12 @@ class FileRowContextMenuOverlay extends StatelessWidget {
                     controller.revealFocusedInFinder();
                   },
                 ),
+                menuRow(
+                  label: 'Deep Compare Folders…',
+                  shortcut: '⌘D',
+                  labelColor: p.primaryAccent,
+                  onTap: () => controller.openDeepCompare(),
+                ),
                 Container(
                   height: 1,
                   margin: const EdgeInsets.symmetric(vertical: 4),

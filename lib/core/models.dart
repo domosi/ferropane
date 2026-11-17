@@ -228,6 +228,85 @@ class ListerSliceModel {
   }
 }
 
+class CompareEntryModel {
+  final String relPath;
+  final bool isDir;
+  final String status; // "only_left", "only_right", "different", "identical"
+  final String newerSide; // "left", "right", "same"
+  final int leftSize;
+  final int rightSize;
+  final int leftModified;
+  final int rightModified;
+
+  const CompareEntryModel({
+    required this.relPath,
+    required this.isDir,
+    required this.status,
+    required this.newerSide,
+    required this.leftSize,
+    required this.rightSize,
+    required this.leftModified,
+    required this.rightModified,
+  });
+
+  factory CompareEntryModel.fromJson(Map<String, dynamic> json) {
+    return CompareEntryModel(
+      relPath: json['rel_path'] as String? ?? '',
+      isDir: json['is_dir'] as bool? ?? false,
+      status: json['status'] as String? ?? 'identical',
+      newerSide: json['newer_side'] as String? ?? 'same',
+      leftSize: (json['left_size'] as num?)?.toInt() ?? 0,
+      rightSize: (json['right_size'] as num?)?.toInt() ?? 0,
+      leftModified: (json['left_modified'] as num?)?.toInt() ?? 0,
+      rightModified: (json['right_modified'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class DirCompareResultModel {
+  final bool ok;
+  final String leftRoot;
+  final String rightRoot;
+  final bool compareContent;
+  final int onlyLeftCount;
+  final int onlyRightCount;
+  final int differentCount;
+  final int identicalCount;
+  final List<CompareEntryModel> items;
+  final String? error;
+
+  const DirCompareResultModel({
+    required this.ok,
+    required this.leftRoot,
+    required this.rightRoot,
+    required this.compareContent,
+    required this.onlyLeftCount,
+    required this.onlyRightCount,
+    required this.differentCount,
+    required this.identicalCount,
+    required this.items,
+    this.error,
+  });
+
+  factory DirCompareResultModel.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List<dynamic>? ?? const [];
+    return DirCompareResultModel(
+      ok: json['ok'] as bool? ?? false,
+      leftRoot: json['left_root'] as String? ?? '',
+      rightRoot: json['right_root'] as String? ?? '',
+      compareContent: json['compare_content'] as bool? ?? false,
+      onlyLeftCount: (json['only_left_count'] as num?)?.toInt() ?? 0,
+      onlyRightCount: (json['only_right_count'] as num?)?.toInt() ?? 0,
+      differentCount: (json['different_count'] as num?)?.toInt() ?? 0,
+      identicalCount: (json['identical_count'] as num?)?.toInt() ?? 0,
+      items: rawItems
+          .map((e) => CompareEntryModel.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false),
+      error: json['error'] as String?,
+    );
+  }
+}
+
 String formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';
   final kb = bytes / 1024.0;

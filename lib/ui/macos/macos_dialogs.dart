@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../core/models.dart';
 import '../../state/commander_controller.dart';
+import '../common/deep_compare_modal.dart';
 import '../common/open_with_overlays.dart';
 
 class MacosDialogOverlay extends StatelessWidget {
@@ -30,6 +31,9 @@ class MacosDialogOverlay extends StatelessWidget {
     }
     if (ctrl.activeDialog == ActiveDialog.openWithPalette) {
       return OpenWithPaletteCard(controller: ctrl);
+    }
+    if (ctrl.activeDialog == ActiveDialog.deepCompare) {
+      return DeepCompareModal(controller: ctrl);
     }
 
     final targets = ctrl.getActionTargetPaths();

@@ -13,6 +13,7 @@ enum ActiveDialog {
   none,
   lister,
   openWithPalette,
+  deepCompare,
   copyConfirm,
   moveConfirm,
   mkdirPrompt,
@@ -105,6 +106,14 @@ class CommanderController extends ChangeNotifier {
 
   Offset? contextMenuPosition;
   DirEntryModel? contextMenuEntry;
+
+  // Deep Compare (Synchronize Directories) state
+  DirCompareResultModel? compareResult;
+  bool deepCompareByContent = true;
+  bool compareShowOnlyLeft = true;
+  bool compareShowDifferent = true;
+  bool compareShowOnlyRight = true;
+  bool compareShowIdentical = false;
 
   String statusBanner =
       'Ready — Tab: switch pane | Space: select | ⇧Enter / F4: Open With';
@@ -530,9 +539,106 @@ class CommanderController extends ChangeNotifier {
       case ActiveDialog.openWithPalette:
         launchSelectedOpenWithApp();
         break;
+      case ActiveDialog.deepCompare:
+        closeDialog();
+        break;
       case ActiveDialog.none:
         break;
     }
+  }
+
+  // --- Deep Compare Folders (Synchronize Dirs) ---
+  void openDeepCompare({bool? byContent}) {
+    closeContextMenu();
+    if (byContent != null) {
+      deepCompareByContent = byContent;
+    }
+    compareResult = _bridge.compareDirectories(
+      leftTab.summary.currentPath,
+      rightTab.summary.currentPath,
+      compareContent: deepCompareByContent,
+      showHidden: showHidden,
+    );
+    activeDialog = ActiveDialog.deepCompare;
+    final res = compareResult!;
+    statusBanner =
+        'Deep Compare: ${res.onlyLeftCount} only left, ${res.differentCount} diff, ${res.onlyRightCount} only right, ${res.identicalCount} identical';
+    notifyListeners();
+  }
+
+  void toggleCompareFilter({
+    bool? onlyLeft,
+    bool? different,
+    bool? onlyRight,
+    bool? identical,
+  }) {
+    if (onlyLeft != null) compareShowOnlyLeft = onlyLeft;
+    if (different != null) compareShowDifferent = different;
+    if (onlyRight != null) compareShowOnlyRight = onlyRight;
+    if (identical != null) compareShowIdentical = identical;
+    notifyListeners();
+  }
+
+  List<CompareEntryModel> get filteredCompareItems {
+    final res = compareResult;
+    if (res == null) return const [];
+    return res.items.where((item) {
+      switch (item.status) {
+        case 'only_left':
+          return compareShowOnlyLeft;
+        case 'different':
+          return compareShowDifferent;
+        case 'only_right':
+          return compareShowOnlyRight;
+        case 'identical':
+          return compareShowIdentical;
+        default:
+          return true;
+      }
+    }).toList(growable: false);
+  }
+
+  void syncCompareSingleItem(CompareEntryModel item, {required bool leftToRight}) {
+    final res = compareResult;
+    if (res == null) return;
+    final srcRoot = leftToRight ? res.leftRoot : res.rightRoot;
+    final dstRoot = leftToRight ? res.rightRoot : res.leftRoot;
+    final srcFull = '$srcRoot/${item.relPath}';
+    final dstFull = '$dstRoot/${item.relPath}';
+    final dstParent = File(dstFull).parent.path;
+    _bridge.copyItems([srcFull], dstParent);
+    reloadBothPanes();
+    openDeepCompare();
+  }
+
+  void syncAllCompare({required bool leftToRight}) {
+    final res = compareResult;
+    if (res == null) return;
+    final srcRoot = leftToRight ? res.leftRoot : res.rightRoot;
+    final dstRoot = leftToRight ? res.rightRoot : res.leftRoot;
+    int synced = 0;
+
+    for (final item in filteredCompareItems) {
+      if (item.isDir) continue;
+      final shouldCopy = leftToRight
+          ? (item.status == 'only_left' ||
+                (item.status == 'different' && item.newerSide != 'right'))
+          : (item.status == 'only_right' ||
+                (item.status == 'different' && item.newerSide != 'left'));
+      if (!shouldCopy) continue;
+      final srcFull = '$srcRoot/${item.relPath}';
+      final dstFull = '$dstRoot/${item.relPath}';
+      final dstParent = File(dstFull).parent.path;
+      final op = _bridge.copyItems([srcFull], dstParent);
+      if (op.ok) synced++;
+    }
+
+    reloadBothPanes();
+    openDeepCompare();
+    statusBanner = leftToRight
+        ? 'Synced $synced file(s) from Left → Right'
+        : 'Synced $synced file(s) from Right ← Left';
+    notifyListeners();
   }
 
   // --- "Open With..." Palette, Smart F4, and Right-Click Context Menu ---

@@ -177,6 +177,10 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         ctrl.openGotoPathDialog();
         return KeyEventResult.handled;
       }
+      if (key == LogicalKeyboardKey.keyD) {
+        ctrl.openDeepCompare();
+        return KeyEventResult.handled;
+      }
       if (key == LogicalKeyboardKey.keyO) {
         ctrl.openOpenWithPalette();
         return KeyEventResult.handled;

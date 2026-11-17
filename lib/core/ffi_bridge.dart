@@ -71,6 +71,21 @@ typedef _TcListerReadC =
 typedef _TcListerReadDart =
     ffi.Pointer<Utf8> Function(ffi.Pointer<Utf8>, int, int, bool);
 
+typedef _TcCompareDirsC =
+    ffi.Pointer<Utf8> Function(
+      ffi.Pointer<Utf8>,
+      ffi.Pointer<Utf8>,
+      ffi.Bool,
+      ffi.Bool,
+    );
+typedef _TcCompareDirsDart =
+    ffi.Pointer<Utf8> Function(
+      ffi.Pointer<Utf8>,
+      ffi.Pointer<Utf8>,
+      bool,
+      bool,
+    );
+
 class TcRustBridge {
   static TcRustBridge? _instance;
   static TcRustBridge get instance => _instance ??= TcRustBridge._init();
@@ -96,6 +111,7 @@ class TcRustBridge {
   late final _TcOpsTwoStrDart _opsMkdir;
   late final _TcOpsDeleteDart _opsDelete;
   late final _TcListerReadDart _listerRead;
+  late final _TcCompareDirsDart _compareDirs;
 
   TcRustBridge._init() {
     _lib = _openLibrary();
@@ -158,6 +174,8 @@ class TcRustBridge {
         .lookupFunction<_TcOpsDeleteC, _TcOpsDeleteDart>('tc_ops_delete');
     _listerRead = _lib
         .lookupFunction<_TcListerReadC, _TcListerReadDart>('tc_lister_read');
+    _compareDirs = _lib
+        .lookupFunction<_TcCompareDirsC, _TcCompareDirsDart>('tc_compare_dirs');
   }
 
   static ffi.DynamicLibrary _openLibrary() {
@@ -335,6 +353,27 @@ class TcRustBridge {
       return ListerSliceModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } finally {
       calloc.free(cPath);
+    }
+  }
+
+  DirCompareResultModel compareDirectories(
+    String leftDir,
+    String rightDir, {
+    required bool compareContent,
+    required bool showHidden,
+  }) {
+    final cLeft = leftDir.toNativeUtf8();
+    final cRight = rightDir.toNativeUtf8();
+    try {
+      final raw = _consumeRustString(
+        _compareDirs(cLeft, cRight, compareContent, showHidden),
+      );
+      return DirCompareResultModel.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } finally {
+      calloc.free(cLeft);
+      calloc.free(cRight);
     }
   }
 }

@@ -141,6 +141,12 @@ class MacosCommanderShell extends StatelessWidget {
                     onPressed: controller.syncOtherPaneToActive,
                   ),
                   toolBtn(
+                    icon: CupertinoIcons.doc_on_doc_fill,
+                    label: 'Compare',
+                    active: controller.activeDialog == ActiveDialog.deepCompare,
+                    onPressed: () => controller.openDeepCompare(),
+                  ),
+                  toolBtn(
                     icon: CupertinoIcons.eye,
                     label: 'QuickLook',
                     onPressed: controller.triggerQuickLook,

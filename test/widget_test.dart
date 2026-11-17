@@ -95,6 +95,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(Directory('${tempLeft.path}/NewFolder').existsSync(), isTrue);
 
+      // 5b. Click "Compare" in the top menu bar to open Folder Deep Compare
+      await tester.tap(find.text('Compare'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Folder Deep Compare & Synchronize'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('→ Only Left (5)'), findsOneWidget);
+      expect(find.textContaining('← Only Right (1)'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
       // 6. Open UI dropdown picker and select Material 3 UI
       await tester.tap(find.text('macOS UI'));
       await tester.pumpAndSettle();

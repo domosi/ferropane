@@ -147,6 +147,20 @@ class MaterialCommanderShell extends StatelessWidget {
                   const SizedBox(width: 5),
                   ActionChip(
                     avatar: Icon(
+                      Icons.compare_arrows_rounded,
+                      size: 15,
+                      color: p.primaryAccent,
+                    ),
+                    label: const Text(
+                      'Compare',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => controller.openDeepCompare(),
+                  ),
+                  const SizedBox(width: 5),
+                  ActionChip(
+                    avatar: Icon(
                       Icons.preview_rounded,
                       size: 14,
                       color: p.primaryAccent,

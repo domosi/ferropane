@@ -1,3 +1,4 @@
+pub mod compare;
 pub mod entry;
 pub mod lister;
 pub mod ops;
@@ -253,6 +254,19 @@ pub extern "C" fn tc_lister_read(
 ) -> *mut c_char {
     let file_path = cstr_to_string(file_path_ptr);
     let res = lister::read_lister_slice(&file_path, offset, max_bytes, hex_mode);
+    string_to_cchar(serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string()))
+}
+
+#[no_mangle]
+pub extern "C" fn tc_compare_dirs(
+    left_dir_ptr: *const c_char,
+    right_dir_ptr: *const c_char,
+    compare_content: bool,
+    show_hidden: bool,
+) -> *mut c_char {
+    let left_dir = cstr_to_string(left_dir_ptr);
+    let right_dir = cstr_to_string(right_dir_ptr);
+    let res = compare::compare_directories(&left_dir, &right_dir, compare_content, show_hidden);
     string_to_cchar(serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string()))
 }
 
