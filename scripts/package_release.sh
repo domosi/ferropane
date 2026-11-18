@@ -42,17 +42,21 @@ if [[ -n "$SIGN_IDENTITY" ]]; then
       --team-id "$APPLE_TEAM_ID" \
       --password "$APPLE_APP_SPECIFIC_PASSWORD" \
       --wait
-    echo "==> Stapling notarization ticket to FerroPane-macos-arm64.dmg..."
+    echo "==> Stapling notarization ticket to FerroPane.app and FerroPane-macos-arm64.dmg..."
+    xcrun stapler staple "$APP_BUNDLE"
     xcrun stapler staple "$DIST_DIR/FerroPane-macos-arm64.dmg"
     xcrun stapler validate "$DIST_DIR/FerroPane-macos-arm64.dmg"
+    ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "$DIST_DIR/FerroPane-macos-arm64.zip"
   elif xcrun notarytool history --keychain-profile "ferropane-notary" >/dev/null 2>&1; then
     echo "==> Submitting FerroPane-macos-arm64.dmg to Apple Notary Service (Keychain profile: ferropane-notary)..."
     xcrun notarytool submit "$DIST_DIR/FerroPane-macos-arm64.dmg" \
       --keychain-profile "ferropane-notary" \
       --wait
-    echo "==> Stapling notarization ticket to FerroPane-macos-arm64.dmg..."
+    echo "==> Stapling notarization ticket to FerroPane.app and FerroPane-macos-arm64.dmg..."
+    xcrun stapler staple "$APP_BUNDLE"
     xcrun stapler staple "$DIST_DIR/FerroPane-macos-arm64.dmg"
     xcrun stapler validate "$DIST_DIR/FerroPane-macos-arm64.dmg"
+    ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "$DIST_DIR/FerroPane-macos-arm64.zip"
   fi
 fi
 
