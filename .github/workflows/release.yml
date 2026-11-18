@@ -9,16 +9,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to create or update (e.g. v1.0.0)'
+        description: 'Release tag to create or update (e.g. v1.1.0)'
         required: false
-        default: 'latest'
+        default: 'v1.1.0'
 
 permissions:
   contents: write
 
 jobs:
   build-macos:
-    name: Build FerroPane (macOS Apple Silicon)
+    name: Build, Sign & Notarize FerroPane (macOS Apple Silicon)
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -44,17 +44,48 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Import Apple Developer ID Certificate into Ephemeral Keychain
+        if: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 != '' }}
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/ferropane-signing.keychain-db"
+          KEYCHAIN_PASS="$(openssl rand -hex 16)"
+          echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          curl -fsSL https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer -o "$RUNNER_TEMP/DeveloperIDG2CA.cer"
+
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$KEYCHAIN_PATH" -T /usr/bin/codesign -T /usr/bin/security
+          security import "$RUNNER_TEMP/certificate.p12" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          rm -f "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/DeveloperIDG2CA.cer"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
       - name: Run Rust unit tests
         run: |
           cd rust
           cargo test --release
 
-      - name: Install Flutter dependencies & package .dmg / .zip
+      - name: Build, Sign & Notarize .dmg and .zip
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
           flutter config --enable-macos-desktop
           flutter pub get
           chmod +x scripts/run_macos_no_xcode.sh scripts/package_release.sh
           ./scripts/package_release.sh
+
+      - name: Clean up Ephemeral Keychain
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/ferropane-signing.keychain-db" "$RUNNER_TEMP/certificate.p12"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -77,19 +108,14 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Publish to GitHub Releases
+      - name: Publish Signed & Notarized Assets to GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release_meta.outputs.tag }}
         run: |
           NOTES="### Download FerroPane for macOS (Apple Silicon M1/M2/M3/M4)
-          - **Installer Disk Image:** \`FerroPane-macos-arm64.dmg\` (Open and drag \`FerroPane.app\` to \`Applications\`)
-          - **Portable Zip Archive:** \`FerroPane-macos-arm64.zip\`
-
-          > **First Launch Note (macOS Gatekeeper):** Because this open-source build is ad-hoc signed without a paid Apple Developer ID certificate, run this once after copying \`FerroPane.app\` to \`/Applications\`:
-          > \`\`\`zsh
-          > xattr -cr /Applications/FerroPane.app
-          > \`\`\`"
+          - **Signed & Apple-Notarized Installer Disk Image:** \`FerroPane-macos-arm64.dmg\` (Open and drag \`FerroPane.app\` to \`Applications\`)
+          - **Signed & Apple-Notarized Zip Archive:** \`FerroPane-macos-arm64.zip\`"
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" \

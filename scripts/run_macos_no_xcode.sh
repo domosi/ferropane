@@ -86,7 +86,19 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << 'EOF'
 </plist>
 EOF
 
-codesign --force --deep --sign - "$APP_BUNDLE"
+SIGN_IDENTITY="${APPLE_SIGNING_IDENTITY:-$(security find-identity -v -p codesigning | grep -o '"Developer ID Application:[^"]*"' | head -n 1 | tr -d '"' || true)}"
+
+if [[ -n "$SIGN_IDENTITY" ]]; then
+  echo "==> Signing FerroPane.app with Developer ID: $SIGN_IDENTITY (Hardened Runtime)..."
+  codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_BUNDLE/Contents/Frameworks/libtc_core.dylib"
+  codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_BUNDLE/Contents/Frameworks/FlutterMacOS.framework"
+  codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_BUNDLE/Contents/Frameworks/App.framework"
+  codesign --force --options runtime --timestamp --entitlements "$ROOT_DIR/macos/Runner/Release.entitlements" --sign "$SIGN_IDENTITY" "$APP_BUNDLE"
+  codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+else
+  echo "==> No Developer ID certificate found; ad-hoc signing FerroPane.app..."
+  codesign --force --deep --sign - "$APP_BUNDLE"
+fi
 
 if [[ "${1:-}" == "--ci" ]]; then
   echo "==> Built app bundle at $APP_BUNDLE"

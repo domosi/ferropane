@@ -7,17 +7,12 @@
 
 ---
 
-## Download (No Build Required)
+## Download (No Build Required — Apple Notarized)
 
-Grab the pre-built macOS Apple Silicon (`M1` / `M2` / `M3` / `M4`) app directly from [**GitHub Releases**](https://github.com/domosi/ferropane/releases):
+Grab the signed & Apple-notarized macOS Apple Silicon (`M1` / `M2` / `M3` / `M4`) app directly from [**GitHub Releases**](https://github.com/domosi/ferropane/releases):
 
 * **[Download `FerroPane-macos-arm64.dmg`](https://github.com/domosi/ferropane/releases/latest/download/FerroPane-macos-arm64.dmg)** — Open the `.dmg` and drag `FerroPane.app` into `Applications`.
 * **[Download `FerroPane-macos-arm64.zip`](https://github.com/domosi/ferropane/releases/latest/download/FerroPane-macos-arm64.zip)** — Portable `.app` bundle archive.
-
-> **macOS Gatekeeper Note (First Launch):** Because this open-source build is ad-hoc signed without an Apple Developer ID certificate, clear the quarantine attribute once after copying to `/Applications`:
-> ```zsh
-> xattr -cr /Applications/FerroPane.app
-> ```
 
 ---
 
