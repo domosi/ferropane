@@ -121,7 +121,7 @@ class MaterialPaneView extends StatelessWidget {
     TcThemePalette p,
     PaneSummaryModel summary,
   ) {
-    final segments = summary.currentPath
+    final segments = tab.displayPath
         .split('/')
         .where((s) => s.isNotEmpty)
         .toList();
@@ -156,6 +156,43 @@ class MaterialPaneView extends StatelessWidget {
             },
           ),
           const SizedBox(width: 4),
+          if (tab.isInsideArchive)
+            InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
+                controller.setActiveSide(side);
+                if (tab.archiveFilePath != null) {
+                  final host = tab.archiveFilePath!;
+                  final parentDir = host.substring(0, host.lastIndexOf('/'));
+                  final name = host.split('/').last;
+                  tab.archiveFilePath = null;
+                  tab.archiveMountDir = null;
+                  controller.navigateToPath(
+                    parentDir.isEmpty ? '/' : parentDir,
+                    side: side,
+                    selectChildName: name,
+                  );
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: p.selectedRowBg,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: p.selectedText, width: 1),
+                ),
+                child: Text(
+                  '📦 Exit ZIP',
+                  style: TextStyle(
+                    fontFamily: 'Menlo',
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: p.selectedText,
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -464,8 +501,16 @@ class MaterialPaneView extends StatelessWidget {
 
           final icon = entry.isParent
               ? Icons.subdirectory_arrow_left_rounded
+              : entry.isAppBundle
+              ? Icons.apps_rounded
               : entry.isDir
               ? Icons.folder_rounded
+              : entry.isArchive
+              ? Icons.folder_zip_rounded
+              : entry.isDiskImage
+              ? Icons.album_rounded
+              : entry.isExecutableScript
+              ? Icons.terminal_rounded
               : entry.isSymlink
               ? Icons.link_rounded
               : Icons.insert_drive_file_rounded;

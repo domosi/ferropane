@@ -120,4 +120,108 @@ class NativeMacosBridge {
       await _channel.invokeMethod<bool>('quickLook', {'path': path});
     } catch (_) {}
   }
+
+  /// Extracts a .zip or .tar* archive into [destDir] using macOS native ditto/tar.
+  static Future<bool> extractArchiveToDirectory(
+    String archivePath,
+    String destDir,
+  ) async {
+    try {
+      Directory(destDir).createSync(recursive: true);
+      final lower = archivePath.toLowerCase();
+      ProcessResult res;
+      if (lower.endsWith('.zip')) {
+        res = await Process.run('/usr/bin/ditto', [
+          '-x',
+          '-k',
+          archivePath,
+          destDir,
+        ]);
+      } else {
+        res = await Process.run('/usr/bin/tar', [
+          '-xf',
+          archivePath,
+          '-C',
+          destDir,
+        ]);
+      }
+      return res.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Mounts a .dmg file via hdiutil and returns the mounted `/Volumes/<Name>` path.
+  static Future<String?> mountDiskImage(String dmgPath) async {
+    try {
+      final res = await Process.run('/usr/bin/hdiutil', [
+        'attach',
+        dmgPath,
+        '-noidme',
+      ]);
+      if (res.exitCode != 0) return null;
+      final out = res.stdout.toString();
+      for (final line in out.split('\n').reversed) {
+        final idx = line.indexOf('/Volumes/');
+        if (idx >= 0) {
+          final mountPoint = line.substring(idx).trim();
+          if (Directory(mountPoint).existsSync()) {
+            return mountPoint;
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Unmounts / ejects a mounted `/Volumes/<Name>` disk image.
+  static Future<bool> ejectVolume(String volumePath) async {
+    try {
+      final res = await Process.run('/usr/bin/hdiutil', [
+        'detach',
+        volumePath,
+      ]);
+      if (res.exitCode == 0) return true;
+      final forceRes = await Process.run('/usr/bin/hdiutil', [
+        'detach',
+        '-force',
+        volumePath,
+      ]);
+      return forceRes.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Executes a script (.sh, .zsh, .command) or Unix binary inside macOS Terminal.app.
+  static Future<bool> runExecutableInTerminal(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!file.existsSync()) return false;
+      final parentDir = file.parent.path;
+      final ext = filePath.split('.').last.toLowerCase();
+      if (const {'sh', 'zsh', 'command', 'bash'}.contains(ext)) {
+        await Process.run('/bin/chmod', ['+x', filePath]);
+      }
+      if (ext == 'command') {
+        return await openFile(filePath);
+      }
+      final escDir = parentDir.replaceAll("'", "'\\''");
+      final escFile = filePath.replaceAll("'", "'\\''");
+      final cmd = "cd '$escDir' && '$escFile'";
+      final appleScript =
+          'tell application "Terminal"\n'
+          '  activate\n'
+          '  do script "${cmd.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"\n'
+          'end tell';
+      final res = await Process.run('/usr/bin/osascript', ['-e', appleScript]);
+      if (res.exitCode == 0) return true;
+      await openTerminal(parentDir);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }

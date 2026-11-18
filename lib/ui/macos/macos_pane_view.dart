@@ -147,7 +147,7 @@ class MacosPaneView extends StatelessWidget {
   }
 
   Widget _buildPathBar(TcThemePalette p, PaneSummaryModel summary) {
-    final segments = summary.currentPath
+    final segments = tab.displayPath
         .split('/')
         .where((s) => s.isNotEmpty)
         .toList();
@@ -175,6 +175,42 @@ class MacosPaneView extends StatelessWidget {
               ),
             ),
           ),
+          if (tab.isInsideArchive)
+            GestureDetector(
+              onTap: () {
+                controller.setActiveSide(side);
+                if (tab.archiveFilePath != null) {
+                  final host = tab.archiveFilePath!;
+                  final parentDir = host.substring(0, host.lastIndexOf('/'));
+                  final name = host.split('/').last;
+                  tab.archiveFilePath = null;
+                  tab.archiveMountDir = null;
+                  controller.navigateToPath(
+                    parentDir.isEmpty ? '/' : parentDir,
+                    side: side,
+                    selectChildName: name,
+                  );
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: p.selectedRowBg,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: p.selectedText, width: 1),
+                ),
+                child: Text(
+                  '📦 Exit ZIP',
+                  style: TextStyle(
+                    color: p.selectedText,
+                    fontSize: 10.5,
+                    fontFamily: 'Menlo',
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -574,8 +610,16 @@ class _MacosFileRow extends StatelessWidget {
 
     final iconData = entry.isParent
         ? CupertinoIcons.arrow_up_left_square_fill
+        : entry.isAppBundle
+        ? CupertinoIcons.app_badge_fill
         : entry.isDir
         ? CupertinoIcons.folder_fill
+        : entry.isArchive
+        ? CupertinoIcons.archivebox_fill
+        : entry.isDiskImage
+        ? CupertinoIcons.lessthan_circle_fill
+        : entry.isExecutableScript
+        ? CupertinoIcons.chevron_right_square_fill
         : entry.isSymlink
         ? CupertinoIcons.link
         : CupertinoIcons.doc_text_fill;

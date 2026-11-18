@@ -240,6 +240,14 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         ctrl.openDeepCompare();
         return KeyEventResult.handled;
       }
+      if (key == LogicalKeyboardKey.arrowDown) {
+        ctrl.enterDirectoryOrPackageContents();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowUp) {
+        ctrl.navigateUp();
+        return KeyEventResult.handled;
+      }
       if (key == LogicalKeyboardKey.keyO) {
         ctrl.openOpenWithPalette();
         return KeyEventResult.handled;

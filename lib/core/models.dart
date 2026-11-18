@@ -81,8 +81,98 @@ class DirEntryModel {
 
   String get displaySize {
     if (isParent) return '<UP--DIR>';
+    if (isAppBundle) return '<APP>';
     if (isDir && !sizeCalculated) return '<DIR>';
     return formatBytes(size);
+  }
+
+  bool get isAppBundle {
+    return isDir && !isParent && name.toLowerCase().endsWith('.app');
+  }
+
+  bool get isArchive {
+    if (isDir || isParent) return false;
+    final lower = name.toLowerCase();
+    return lower.endsWith('.zip') ||
+        lower.endsWith('.tar.gz') ||
+        lower.endsWith('.tgz') ||
+        lower.endsWith('.tar') ||
+        lower.endsWith('.tar.bz2') ||
+        lower.endsWith('.tbz2') ||
+        lower.endsWith('.tar.xz') ||
+        lower.endsWith('.txz');
+  }
+
+  String get archiveBaseName {
+    final lower = name.toLowerCase();
+    for (final suffix in [
+      '.tar.gz',
+      '.tar.bz2',
+      '.tar.xz',
+      '.tgz',
+      '.tbz2',
+      '.txz',
+      '.zip',
+      '.tar',
+    ]) {
+      if (lower.endsWith(suffix) && name.length > suffix.length) {
+        return name.substring(0, name.length - suffix.length);
+      }
+    }
+    return stem;
+  }
+
+  bool get isDiskImage {
+    return !isDir && !isParent && ext.toLowerCase() == 'dmg';
+  }
+
+  bool get isPkgInstaller {
+    return !isParent && ext.toLowerCase() == 'pkg';
+  }
+
+  bool get isExecutableScript {
+    if (isDir || isParent) return false;
+    final lowerExt = ext.toLowerCase();
+    if (const {'sh', 'zsh', 'command', 'bash'}.contains(lowerExt)) {
+      return true;
+    }
+    // Unix executable file (+x) without a common document/archive extension
+    if (permissions.contains('x') &&
+        !isArchive &&
+        !isDiskImage &&
+        !const {
+          'txt',
+          'md',
+          'json',
+          'yaml',
+          'yml',
+          'xml',
+          'html',
+          'css',
+          'js',
+          'ts',
+          'dart',
+          'rs',
+          'c',
+          'cpp',
+          'h',
+          'png',
+          'jpg',
+          'jpeg',
+          'gif',
+          'webp',
+          'svg',
+          'pdf',
+          'mp3',
+          'mp4',
+          'mov',
+          'wav',
+          'dmg',
+          'pkg',
+        }.contains(lowerExt)) {
+      return true;
+    }
+    return false;
   }
 
   String get displayDate {

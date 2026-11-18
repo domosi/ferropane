@@ -29,13 +29,39 @@ class PaneTabController {
   int cursorIndex = 0;
   final ScrollController scrollController = ScrollController();
 
+  /// When browsing inside a virtual .zip / .tar.gz archive:
+  String? archiveFilePath;
+  String? archiveMountDir;
+
   int _cachedStart = -1;
   int _cachedCount = 0;
   List<DirEntryModel> _cachedSlice = const [];
 
   PaneTabController({required this.rustPaneId, required this.summary});
 
+  bool get isInsideArchive =>
+      archiveFilePath != null &&
+      archiveMountDir != null &&
+      summary.currentPath.startsWith(archiveMountDir!);
+
+  String get displayPath {
+    if (isInsideArchive) {
+      final rel = summary.currentPath.substring(archiveMountDir!.length);
+      return '${archiveFilePath!}$rel';
+    }
+    return summary.currentPath;
+  }
+
   String get title {
+    if (isInsideArchive) {
+      final rel = summary.currentPath.substring(archiveMountDir!.length);
+      final archiveName = archiveFilePath!.split('/').last;
+      if (rel.isEmpty || rel == '/') {
+        return '📦 $archiveName';
+      }
+      final sub = rel.split('/').where((s) => s.isNotEmpty).last;
+      return '📦 $sub';
+    }
     final p = summary.currentPath;
     if (p == '/' || p.isEmpty) return '/';
     final segments = p.split('/').where((s) => s.isNotEmpty).toList();
@@ -336,27 +362,57 @@ class CommanderController extends ChangeNotifier {
     }
   }
 
-  void navigateToPath(String path, {PaneSide? side}) {
+  void navigateToPath(
+    String path, {
+    PaneSide? side,
+    String? selectChildName,
+  }) {
     final targetSide = side ?? activeSide;
     final tab = tabFor(targetSide);
     final prevPath = tab.summary.currentPath;
+
+    // If stepping out of the root of a virtual archive via ".." or breadcrumb, return to the archive's parent folder
+    if (tab.archiveMountDir != null &&
+        tab.archiveFilePath != null &&
+        !path.startsWith(tab.archiveMountDir!)) {
+      final archiveParent = Directory(tab.archiveMountDir!).parent.path;
+      final hostFile = File(tab.archiveFilePath!);
+      final hostName = hostFile.uri.pathSegments.isNotEmpty
+          ? hostFile.uri.pathSegments.last
+          : null;
+      final hostDir = hostFile.parent.path;
+      tab.archiveFilePath = null;
+      tab.archiveMountDir = null;
+      if (path == archiveParent) {
+        navigateToPath(
+          hostDir,
+          side: targetSide,
+          selectChildName: hostName,
+        );
+        statusBanner = 'Exited archive → $hostDir';
+        return;
+      }
+    }
+
     if (_bridge.loadDirectory(tab.rustPaneId, path)) {
       _refreshTab(tab, clampCursor: false);
       tab.cursorIndex = 0;
-      if (prevPath.startsWith(tab.summary.currentPath) &&
-          prevPath != tab.summary.currentPath) {
-        final childName = prevPath
-            .substring(tab.summary.currentPath.length)
-            .split('/')
-            .where((s) => s.isNotEmpty)
-            .firstOrNull;
-        if (childName != null) {
-          for (int i = 0; i < tab.summary.totalRows; i++) {
-            final row = getRow(tab, i);
-            if (row != null && row.name == childName) {
-              tab.cursorIndex = i;
-              break;
-            }
+      final targetChild =
+          selectChildName ??
+          ((prevPath.startsWith(tab.summary.currentPath) &&
+                  prevPath != tab.summary.currentPath)
+              ? prevPath
+                    .substring(tab.summary.currentPath.length)
+                    .split('/')
+                    .where((s) => s.isNotEmpty)
+                    .firstOrNull
+              : null);
+      if (targetChild != null) {
+        for (int i = 0; i < tab.summary.totalRows; i++) {
+          final row = getRow(tab, i);
+          if (row != null && row.name == targetChild) {
+            tab.cursorIndex = i;
+            break;
           }
         }
       }
@@ -365,7 +421,9 @@ class CommanderController extends ChangeNotifier {
         _scrollCursorIntoView(tab);
       });
       persistSession();
-      statusBanner = 'Opened ${tab.summary.currentPath}';
+      statusBanner = tab.isInsideArchive
+          ? '📦 Inside Archive: ${tab.displayPath}'
+          : 'Opened ${tab.summary.currentPath}';
     } else {
       _refreshTab(tab);
       statusBanner = tab.summary.errorMessage ?? 'Cannot open $path';
@@ -374,25 +432,221 @@ class CommanderController extends ChangeNotifier {
   }
 
   void navigateUp() {
-    final current = activeTab.summary.currentPath;
+    final tab = activeTab;
+    if (tab.isInsideArchive && tab.summary.currentPath == tab.archiveMountDir) {
+      final hostFile = File(tab.archiveFilePath!);
+      final hostDir = hostFile.parent.path;
+      final hostName = hostFile.path.split('/').last;
+      tab.archiveFilePath = null;
+      tab.archiveMountDir = null;
+      navigateToPath(hostDir, selectChildName: hostName);
+      statusBanner = 'Exited archive $hostName';
+      return;
+    }
+    final current = tab.summary.currentPath;
     final parent = Directory(current).parent.path;
     if (parent != current) {
       navigateToPath(parent);
     }
   }
 
+  /// Enters inside a directory or macOS .app bundle (Show Package Contents, Cmd+Down)
+  Future<void> enterDirectoryOrPackageContents({DirEntryModel? target}) async {
+    closeContextMenu();
+    final entry = target ?? focusedEntry;
+    if (entry == null) return;
+    if (entry.isParent) {
+      navigateUp();
+      return;
+    }
+    if (entry.isDir) {
+      navigateToPath(entry.fullPath);
+      return;
+    }
+    if (entry.isArchive) {
+      await browseArchiveInPane(entry);
+    }
+  }
+
+  /// Opens a .zip / .tar.gz archive directly inside the pane as a virtual folder (Total Commander VFS mode)
+  Future<void> browseArchiveInPane(
+    DirEntryModel entry, {
+    PaneSide? side,
+  }) async {
+    closeContextMenu();
+    final targetSide = side ?? activeSide;
+    final tab = tabFor(targetSide);
+    statusBanner = '📦 Opening archive ${entry.name}...';
+    notifyListeners();
+
+    final safeKey =
+        '${entry.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_')}_${entry.modifiedSec}_${entry.size}';
+    final vfsBase = Directory('${Directory.systemTemp.path}/ferropane_vfs');
+    final stagingDir = Directory('${vfsBase.path}/$safeKey');
+
+    bool ready = stagingDir.existsSync() && stagingDir.listSync().isNotEmpty;
+    if (!ready) {
+      if (stagingDir.existsSync()) {
+        try {
+          stagingDir.deleteSync(recursive: true);
+        } catch (_) {}
+      }
+      ready = await NativeMacosBridge.extractArchiveToDirectory(
+        entry.fullPath,
+        stagingDir.path,
+      );
+    }
+
+    if (!ready || !stagingDir.existsSync()) {
+      statusBanner = 'Failed to open archive ${entry.name}';
+      notifyListeners();
+      return;
+    }
+
+    final resolvedMount = stagingDir.resolveSymbolicLinksSync();
+    tab.archiveFilePath = entry.fullPath;
+    tab.archiveMountDir = resolvedMount;
+    navigateToPath(resolvedMount, side: targetSide);
+    statusBanner =
+        '📦 Browsing ${entry.name} — Press F3 to view, F5 to extract selected, Backspace to exit';
+    notifyListeners();
+  }
+
+  /// Extracts an archive either into a subfolder in the current pane or into the opposite pane
+  Future<void> extractArchive(
+    DirEntryModel entry, {
+    required bool toOtherPane,
+  }) async {
+    closeContextMenu();
+    final baseDir = toOtherPane
+        ? inactiveTab.summary.currentPath
+        : activeTab.summary.currentPath;
+    final destDir = '$baseDir/${entry.archiveBaseName}';
+    statusBanner = '📦 Extracting ${entry.name} to $destDir...';
+    notifyListeners();
+
+    final ok = await NativeMacosBridge.extractArchiveToDirectory(
+      entry.fullPath,
+      destDir,
+    );
+    reloadBothPanes();
+    statusBanner = ok
+        ? '📦 Extracted ${entry.name} → $destDir'
+        : 'Failed to extract ${entry.name}';
+    notifyListeners();
+  }
+
+  /// Mounts a .dmg disk image and navigates the pane directly into the mounted `/Volumes/<Disk>`
+  Future<void> mountAndOpenDiskImage(
+    DirEntryModel entry, {
+    PaneSide? side,
+  }) async {
+    closeContextMenu();
+    final targetSide = side ?? activeSide;
+    statusBanner = '💿 Mounting disk image ${entry.name}...';
+    notifyListeners();
+
+    final mountPoint = await NativeMacosBridge.mountDiskImage(entry.fullPath);
+    if (mountPoint != null && Directory(mountPoint).existsSync()) {
+      navigateToPath(mountPoint, side: targetSide);
+      statusBanner = '💿 Mounted ${entry.name} → $mountPoint';
+    } else {
+      // Fallback to macOS DiskImageMounter
+      await NativeMacosBridge.openFile(entry.fullPath);
+      statusBanner = '💿 Opened ${entry.name} with DiskImageMounter';
+    }
+    notifyListeners();
+  }
+
+  /// Unmounts / ejects a mounted volume under /Volumes
+  Future<void> ejectVolumePath(String volumePath) async {
+    closeContextMenu();
+    statusBanner = '⏏ Ejecting $volumePath...';
+    notifyListeners();
+    final ok = await NativeMacosBridge.ejectVolume(volumePath);
+    if (ok) {
+      if (leftTab.summary.currentPath.startsWith(volumePath)) {
+        navigateToPath('/Volumes', side: PaneSide.left);
+      }
+      if (rightTab.summary.currentPath.startsWith(volumePath)) {
+        navigateToPath('/Volumes', side: PaneSide.right);
+      }
+      reloadBothPanes();
+      statusBanner = '⏏ Ejected $volumePath';
+    } else {
+      statusBanner = 'Could not eject $volumePath (volume may be busy)';
+    }
+    notifyListeners();
+  }
+
+  /// Smart Enter / Double-Click execution tailored to each file type
   Future<void> activateFocusedEntry() async {
     final entry = focusedEntry;
     if (entry == null) return;
-    if (entry.isParent || entry.isDir) {
-      navigateToPath(entry.fullPath);
-    } else {
-      statusBanner = 'Opening ${entry.name}...';
+
+    // 0. Parent directory ("..") -> step up (or exit virtual archive)
+    if (entry.isParent) {
+      navigateUp();
+      return;
+    }
+
+    // 1. macOS .app Application Bundle -> launch the app natively! (Use ⌘↓ for Package Contents)
+    if (entry.isAppBundle) {
+      statusBanner =
+          '🚀 Launching ${entry.name}... (Tip: Press ⌘↓ to browse Package Contents)';
       notifyListeners();
-      final ok = await NativeMacosBridge.openFile(entry.fullPath);
-      if (!ok) {
-        openLister();
-      }
+      await NativeMacosBridge.openFile(entry.fullPath);
+      return;
+    }
+
+    // 2. Regular Directory -> navigate inside
+    if (entry.isDir) {
+      navigateToPath(entry.fullPath);
+      return;
+    }
+
+    // 3. Archive (.zip, .tar.gz, .tgz, .tar, .tar.bz2, .tar.xz) -> browse inside pane!
+    if (entry.isArchive) {
+      await browseArchiveInPane(entry);
+      return;
+    }
+
+    // 4. Disk Image (.dmg) -> auto-mount via hdiutil & open /Volumes/<Disk> in active pane!
+    if (entry.isDiskImage) {
+      await mountAndOpenDiskImage(entry);
+      return;
+    }
+
+    // 5. User-remembered preferred app for this file extension (if configured)
+    final extKey = entry.ext.toLowerCase();
+    final rememberedApp = preferredAppsByExt[extKey];
+    if (rememberedApp != null &&
+        rememberedApp.isNotEmpty &&
+        Directory(rememberedApp).existsSync()) {
+      final appName = rememberedApp.split('/').last.replaceAll('.app', '');
+      statusBanner = 'Opened ${entry.name} with $appName';
+      notifyListeners();
+      await NativeMacosBridge.openFileWithApp(entry.fullPath, rememberedApp);
+      return;
+    }
+
+    // 6. Executable Script (.sh, .zsh, .command) or Unix +x binary -> execute in Terminal.app
+    if (entry.isExecutableScript) {
+      statusBanner =
+          '⚡ Executing ${entry.name} in Terminal... (Press F4 to edit, F3 to view)';
+      notifyListeners();
+      final ran = await NativeMacosBridge.runExecutableInTerminal(
+        entry.fullPath,
+      );
+      if (ran) return;
+    }
+
+    // 7. Documents, Media, Code, PDFs -> open with default macOS app, or fallback to F3 Lister
+    statusBanner = 'Opening ${entry.name}...';
+    notifyListeners();
+    final ok = await NativeMacosBridge.openFile(entry.fullPath);
+    if (!ok) {
+      openLister();
     }
   }
 

@@ -458,13 +458,56 @@ class FileRowContextMenuOverlay extends StatelessWidget {
                   color: p.dividerColor,
                 ),
                 menuRow(
-                  label: 'Open Default',
+                  label: entry.isAppBundle
+                      ? '🚀 Launch Application'
+                      : entry.isArchive
+                      ? '📦 Browse Inside Archive'
+                      : entry.isDiskImage
+                      ? '💿 Mount Disk Image & Open'
+                      : entry.isExecutableScript
+                      ? '⚡ Run in Terminal'
+                      : 'Open Default',
                   shortcut: 'Enter',
+                  labelColor:
+                      (entry.isAppBundle ||
+                          entry.isArchive ||
+                          entry.isDiskImage ||
+                          entry.isExecutableScript)
+                      ? p.primaryAccent
+                      : p.fileImportantText,
                   onTap: () {
                     controller.closeContextMenu();
                     controller.activateFocusedEntry();
                   },
                 ),
+                if (entry.isAppBundle)
+                  menuRow(
+                    label: '📂 Show Package Contents',
+                    shortcut: '⌘↓',
+                    onTap: () => controller.enterDirectoryOrPackageContents(
+                      target: entry,
+                    ),
+                  ),
+                if (entry.isArchive) ...[
+                  menuRow(
+                    label: '📦 Extract Archive Here',
+                    onTap: () =>
+                        controller.extractArchive(entry, toOtherPane: false),
+                  ),
+                  menuRow(
+                    label: '📦 Extract Archive to Other Pane',
+                    onTap: () =>
+                        controller.extractArchive(entry, toOtherPane: true),
+                  ),
+                ],
+                if (entry.isDir &&
+                    entry.fullPath.startsWith('/Volumes/') &&
+                    entry.fullPath != '/Volumes/Macintosh HD')
+                  menuRow(
+                    label: '⏏ Eject / Unmount Volume',
+                    labelColor: p.selectedText,
+                    onTap: () => controller.ejectVolumePath(entry.fullPath),
+                  ),
                 menuRow(
                   label: 'Open With Palette…',
                   shortcut: '⇧Enter / ⌘O',
