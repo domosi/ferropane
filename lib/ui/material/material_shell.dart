@@ -130,6 +130,20 @@ class MaterialCommanderShell extends StatelessWidget {
                     onSelected: (_) => controller.toggleHiddenFiles(),
                   ),
                   const SizedBox(width: 5),
+                  ActionChip(
+                    avatar: Icon(
+                      Icons.search_rounded,
+                      size: 15,
+                      color: p.primaryAccent,
+                    ),
+                    label: const Text(
+                      'Search',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: controller.openFileSearch,
+                  ),
+                  const SizedBox(width: 5),
                   FilterChip(
                     selected: controller.filterBarVisible,
                     avatar: Icon(

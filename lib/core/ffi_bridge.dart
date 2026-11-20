@@ -86,6 +86,25 @@ typedef _TcCompareDirsDart =
       bool,
     );
 
+typedef _TcSearchDirC =
+    ffi.Pointer<Utf8> Function(
+      ffi.Pointer<Utf8>,
+      ffi.Pointer<Utf8>,
+      ffi.Pointer<Utf8>,
+      ffi.Bool,
+      ffi.Bool,
+      ffi.Size,
+    );
+typedef _TcSearchDirDart =
+    ffi.Pointer<Utf8> Function(
+      ffi.Pointer<Utf8>,
+      ffi.Pointer<Utf8>,
+      ffi.Pointer<Utf8>,
+      bool,
+      bool,
+      int,
+    );
+
 class TcRustBridge {
   static TcRustBridge? _instance;
   static TcRustBridge get instance => _instance ??= TcRustBridge._init();
@@ -112,6 +131,7 @@ class TcRustBridge {
   late final _TcOpsDeleteDart _opsDelete;
   late final _TcListerReadDart _listerRead;
   late final _TcCompareDirsDart _compareDirs;
+  late final _TcSearchDirDart _searchDir;
 
   TcRustBridge._init() {
     _lib = _openLibrary();
@@ -176,6 +196,8 @@ class TcRustBridge {
         .lookupFunction<_TcListerReadC, _TcListerReadDart>('tc_lister_read');
     _compareDirs = _lib
         .lookupFunction<_TcCompareDirsC, _TcCompareDirsDart>('tc_compare_dirs');
+    _searchDir = _lib
+        .lookupFunction<_TcSearchDirC, _TcSearchDirDart>('tc_search_dir');
   }
 
   static ffi.DynamicLibrary _openLibrary() {
@@ -374,6 +396,38 @@ class TcRustBridge {
     } finally {
       calloc.free(cLeft);
       calloc.free(cRight);
+    }
+  }
+
+  DirSearchResultModel searchDirectory(
+    String rootDir, {
+    required String nameQuery,
+    String contentQuery = '',
+    bool recursive = true,
+    bool showHidden = false,
+    int maxResults = 300,
+  }) {
+    final cRoot = rootDir.toNativeUtf8();
+    final cName = nameQuery.toNativeUtf8();
+    final cContent = contentQuery.toNativeUtf8();
+    try {
+      final raw = _consumeRustString(
+        _searchDir(
+          cRoot,
+          cName,
+          cContent,
+          recursive,
+          showHidden,
+          maxResults,
+        ),
+      );
+      return DirSearchResultModel.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } finally {
+      calloc.free(cRoot);
+      calloc.free(cName);
+      calloc.free(cContent);
     }
   }
 }

@@ -411,6 +411,73 @@ class FavoriteFolderItem {
   });
 }
 
+class SearchHitModel {
+  final String name;
+  final String relPath;
+  final String fullPath;
+  final String parentDir;
+  final bool isDir;
+  final int size;
+  final int modifiedSec;
+  final bool isPrefixMatch;
+  final String? matchedLine;
+
+  const SearchHitModel({
+    required this.name,
+    required this.relPath,
+    required this.fullPath,
+    required this.parentDir,
+    required this.isDir,
+    required this.size,
+    required this.modifiedSec,
+    required this.isPrefixMatch,
+    this.matchedLine,
+  });
+
+  factory SearchHitModel.fromJson(Map<String, dynamic> json) {
+    return SearchHitModel(
+      name: json['name'] as String? ?? '',
+      relPath: json['rel_path'] as String? ?? '',
+      fullPath: json['full_path'] as String? ?? '',
+      parentDir: json['parent_dir'] as String? ?? '',
+      isDir: json['is_dir'] as bool? ?? false,
+      size: (json['size'] as num?)?.toInt() ?? 0,
+      modifiedSec: (json['modified_sec'] as num?)?.toInt() ?? 0,
+      isPrefixMatch: json['is_prefix_match'] as bool? ?? false,
+      matchedLine: json['matched_line'] as String?,
+    );
+  }
+}
+
+class DirSearchResultModel {
+  final bool ok;
+  final String rootDir;
+  final int scannedCount;
+  final List<SearchHitModel> items;
+  final String? error;
+
+  const DirSearchResultModel({
+    required this.ok,
+    required this.rootDir,
+    required this.scannedCount,
+    required this.items,
+    this.error,
+  });
+
+  factory DirSearchResultModel.fromJson(Map<String, dynamic> json) {
+    final raw = json['items'] as List<dynamic>? ?? const [];
+    return DirSearchResultModel(
+      ok: json['ok'] as bool? ?? false,
+      rootDir: json['root_dir'] as String? ?? '',
+      scannedCount: (json['scanned_count'] as num?)?.toInt() ?? 0,
+      items: raw
+          .map((e) => SearchHitModel.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false),
+      error: json['error'] as String?,
+    );
+  }
+}
+
 String formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';
   final kb = bytes / 1024.0;

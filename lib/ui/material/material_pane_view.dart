@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/models.dart';
 import '../../core/theme_palette.dart';
 import '../../state/commander_controller.dart';
+import '../common/file_search_modal.dart';
 
 class MaterialPaneView extends StatelessWidget {
   final CommanderController controller;
@@ -43,6 +44,8 @@ class MaterialPaneView extends StatelessWidget {
             _buildMaterialPathHeader(context, p, summary),
             _buildMaterialColumnHeaders(context, p, summary),
             Expanded(child: _buildMaterialFileList(context, p, summary)),
+            if (isActive && controller.typeAheadQuery.isNotEmpty)
+              TypeAheadJumpBar(controller: controller),
             if (isActive &&
                 (controller.filterBarVisible ||
                     summary.filterQuery.isNotEmpty))
@@ -557,11 +560,19 @@ class MaterialPaneView extends StatelessWidget {
                         Icon(icon, size: 15, color: iconColor),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            entry.isDir && !entry.isParent
+                          child: buildHighlightedNameText(
+                            displayText: entry.isDir && !entry.isParent
                                 ? '[${entry.name}]'
                                 : entry.stem,
-                            style: TextStyle(
+                            query: entry.isParent
+                                ? ''
+                                : ((isActive &&
+                                          controller.typeAheadQuery.isNotEmpty)
+                                      ? controller.typeAheadQuery
+                                      : summary.filterQuery),
+                            palette: p,
+                            isActiveCursor: activeCur,
+                            baseStyle: TextStyle(
                               fontFamily: 'Menlo',
                               fontSize: 12,
                               color: nameColor,
@@ -570,7 +581,6 @@ class MaterialPaneView extends StatelessWidget {
                                   ? FontWeight.w700
                                   : FontWeight.w500,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

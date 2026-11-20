@@ -108,6 +108,28 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
           return KeyEventResult.handled;
         }
       }
+      if (ctrl.activeDialog == ActiveDialog.fileSearch) {
+        if (key == LogicalKeyboardKey.arrowDown) {
+          ctrl.moveSearchSelection(1);
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowUp) {
+          ctrl.moveSearchSelection(-1);
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.f3) {
+          ctrl.viewSearchHitInLister();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter) {
+          ctrl.jumpToSearchHit(null, isShift);
+          _rootFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        // Let the search TextFields receive normal typing keys!
+        return KeyEventResult.ignored;
+      }
       if (ctrl.activeDialog == ActiveDialog.openWithPalette) {
         if (key == LogicalKeyboardKey.arrowDown) {
           ctrl.moveOpenWithSelection(1);
@@ -225,7 +247,11 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.keyF) {
-        ctrl.toggleQuickFilterBar();
+        if (isShift) {
+          ctrl.toggleQuickFilterBar();
+        } else {
+          ctrl.openFileSearch();
+        }
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.keyG) {
@@ -307,6 +333,17 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       ctrl.openFavoritesHotlist();
       return KeyEventResult.handled;
     }
+    // Cycle Type-Ahead matches with Ctrl+N / Ctrl+G (next) or Ctrl+P (prev)
+    if (isControl && !isMeta && ctrl.typeAheadQuery.isNotEmpty) {
+      if (key == LogicalKeyboardKey.keyN || key == LogicalKeyboardKey.keyG) {
+        ctrl.cycleTypeAheadMatch(1);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.keyP) {
+        ctrl.cycleTypeAheadMatch(-1);
+        return KeyEventResult.handled;
+      }
+    }
 
     // Standard Total Commander navigation & function keys
     if (key == LogicalKeyboardKey.tab) {
@@ -362,7 +399,11 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.backspace) {
-      ctrl.navigateUp();
+      if (ctrl.typeAheadQuery.isNotEmpty) {
+        ctrl.backspaceTypeAhead();
+      } else {
+        ctrl.navigateUp();
+      }
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.space) {
@@ -394,10 +435,14 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.slash) {
-      ctrl.toggleQuickFilterBar();
+      ctrl.convertTypeAheadToFilter();
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.escape) {
+      if (ctrl.typeAheadQuery.isNotEmpty) {
+        ctrl.clearTypeAhead();
+        return KeyEventResult.handled;
+      }
       if (ctrl.filterBarVisible ||
           ctrl.activeTab.summary.filterQuery.isNotEmpty) {
         ctrl.setQuickFilter('');
@@ -424,12 +469,27 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.f7) {
-      ctrl.openMkdirDialog();
+      if (isAlt) {
+        ctrl.openFileSearch();
+      } else {
+        ctrl.openMkdirDialog();
+      }
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.f8 || key == LogicalKeyboardKey.delete) {
       ctrl.openDeleteDialog(useTrash: !isShift);
       return KeyEventResult.handled;
+    }
+
+    // Direct Type-Ahead Prefix Jump & Highlighting (letters, digits, '.', '_', '-')
+    if (!isMeta && !isControl && !isAlt) {
+      final ch = event.character;
+      if (ch != null &&
+          ch.length == 1 &&
+          RegExp(r'^[A-Za-z0-9._-]$').hasMatch(ch)) {
+        ctrl.handleTypeAheadChar(ch);
+        return KeyEventResult.handled;
+      }
     }
 
     return KeyEventResult.ignored;

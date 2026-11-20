@@ -3,6 +3,7 @@ import '../../core/models.dart';
 import '../../state/commander_controller.dart';
 import '../common/deep_compare_modal.dart';
 import '../common/favorites_hotlist_modal.dart';
+import '../common/file_search_modal.dart';
 import '../common/open_with_overlays.dart';
 
 class MaterialDialogOverlay extends StatelessWidget {
@@ -27,6 +28,8 @@ class MaterialDialogOverlay extends StatelessWidget {
             ? OpenWithPaletteCard(controller: controller)
             : controller.activeDialog == ActiveDialog.favoritesHotlist
             ? FavoritesHotlistModal(controller: controller)
+            : controller.activeDialog == ActiveDialog.fileSearch
+            ? FileSearchModal(controller: controller)
             : controller.activeDialog == ActiveDialog.deepCompare
             ? DeepCompareModal(controller: controller)
             : _buildMaterialActionDialog(context, controller),

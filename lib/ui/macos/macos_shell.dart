@@ -139,6 +139,12 @@ class MacosCommanderShell extends StatelessWidget {
                   ),
                   toolBtn(
                     icon: CupertinoIcons.search,
+                    label: 'Search',
+                    active: controller.activeDialog == ActiveDialog.fileSearch,
+                    onPressed: controller.openFileSearch,
+                  ),
+                  toolBtn(
+                    icon: CupertinoIcons.line_horizontal_3_decrease,
                     label: 'Filter',
                     active: controller.filterBarVisible,
                     onPressed: controller.toggleQuickFilterBar,

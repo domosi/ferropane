@@ -3,6 +3,7 @@ import '../../core/models.dart';
 import '../../state/commander_controller.dart';
 import '../common/deep_compare_modal.dart';
 import '../common/favorites_hotlist_modal.dart';
+import '../common/file_search_modal.dart';
 import '../common/open_with_overlays.dart';
 
 class MacosDialogOverlay extends StatelessWidget {
@@ -35,6 +36,9 @@ class MacosDialogOverlay extends StatelessWidget {
     }
     if (ctrl.activeDialog == ActiveDialog.favoritesHotlist) {
       return FavoritesHotlistModal(controller: ctrl);
+    }
+    if (ctrl.activeDialog == ActiveDialog.fileSearch) {
+      return FileSearchModal(controller: ctrl);
     }
     if (ctrl.activeDialog == ActiveDialog.deepCompare) {
       return DeepCompareModal(controller: ctrl);

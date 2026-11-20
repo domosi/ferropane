@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,6 +15,7 @@ enum ActiveDialog {
   lister,
   openWithPalette,
   favoritesHotlist,
+  fileSearch,
   deepCompare,
   copyConfirm,
   moveConfirm,
@@ -147,8 +149,25 @@ class CommanderController extends ChangeNotifier {
   PaneSide favoritesTargetSide = PaneSide.left;
   int favoritesSelectedIndex = 0;
 
+  // Type-Ahead Prefix Jump & Inline Filename Highlighting state
+  String typeAheadQuery = '';
+  DateTime? _lastTypeAheadKeyTime;
+  Timer? _typeAheadClearTimer;
+  List<int> typeAheadMatchIndices = const [];
+  int typeAheadCurrentMatchPos = 0;
+
+  // Recursive Easy File Search (⌘F / Alt+F7) state
+  final TextEditingController searchNameController = TextEditingController();
+  final TextEditingController searchContentController = TextEditingController();
+  final FocusNode searchNameFocusNode = FocusNode(
+    debugLabel: 'SearchNameFocus',
+  );
+  bool searchRecursive = true;
+  DirSearchResultModel? searchResult;
+  int searchSelectedIndex = 0;
+
   String statusBanner =
-      'Ready — Tab: switch pane | Space: select | ⌘B: Favorites | ⇧Enter / F4: Open With';
+      'Ready — Type letters to jump & highlight | ⌘F: Find Files | ⌘B: Favorites';
   bool filterBarVisible = false;
 
   static const double rowExtent = 24.0;
@@ -367,6 +386,7 @@ class CommanderController extends ChangeNotifier {
     PaneSide? side,
     String? selectChildName,
   }) {
+    clearTypeAhead();
     final targetSide = side ?? activeSide;
     final tab = tabFor(targetSide);
     final prevPath = tab.summary.currentPath;
@@ -804,12 +824,284 @@ class CommanderController extends ChangeNotifier {
       case ActiveDialog.favoritesHotlist:
         launchSelectedFavorite();
         break;
+      case ActiveDialog.fileSearch:
+        jumpToSearchHit();
+        break;
       case ActiveDialog.deepCompare:
         closeDialog();
         break;
       case ActiveDialog.none:
         break;
     }
+  }
+
+  // --- Type-Ahead Prefix Jump & Inline Filename Highlighting ---
+  void handleTypeAheadChar(String ch) {
+    final clean = ch.toLowerCase();
+    if (clean.isEmpty) return;
+
+    final now = DateTime.now();
+    final elapsedMs = _lastTypeAheadKeyTime == null
+        ? 999999
+        : now.difference(_lastTypeAheadKeyTime!).inMilliseconds;
+    _lastTypeAheadKeyTime = now;
+
+    // If user paused > 1.3s, start a new prefix search; or if they pressed the same single letter again
+    // and no file starts with the doubled letter (e.g. "ff"), cycle to the next file starting with "f"!
+    if (elapsedMs > 1300 || typeAheadQuery.isEmpty) {
+      typeAheadQuery = clean;
+      _recomputeTypeAheadMatches(jumpToFirst: true);
+    } else if (typeAheadQuery.length == 1 && typeAheadQuery == clean) {
+      final doubled = '$typeAheadQuery$clean';
+      final hasDoubledMatch = _findMatchesForQuery(doubled).isNotEmpty;
+      if (hasDoubledMatch) {
+        typeAheadQuery = doubled;
+        _recomputeTypeAheadMatches(jumpToFirst: true);
+      } else {
+        cycleTypeAheadMatch(1);
+        _scheduleTypeAheadAutoClear();
+        return;
+      }
+    } else {
+      typeAheadQuery = '$typeAheadQuery$clean';
+      _recomputeTypeAheadMatches(jumpToFirst: true);
+    }
+
+    _scheduleTypeAheadAutoClear();
+  }
+
+  void backspaceTypeAhead() {
+    if (typeAheadQuery.isEmpty) return;
+    _lastTypeAheadKeyTime = DateTime.now();
+    typeAheadQuery = typeAheadQuery.substring(0, typeAheadQuery.length - 1);
+    if (typeAheadQuery.isEmpty) {
+      clearTypeAhead();
+      return;
+    }
+    _recomputeTypeAheadMatches(jumpToFirst: true);
+    _scheduleTypeAheadAutoClear();
+  }
+
+  void clearTypeAhead() {
+    _typeAheadClearTimer?.cancel();
+    _typeAheadClearTimer = null;
+    if (typeAheadQuery.isNotEmpty || typeAheadMatchIndices.isNotEmpty) {
+      typeAheadQuery = '';
+      typeAheadMatchIndices = const [];
+      typeAheadCurrentMatchPos = 0;
+      notifyListeners();
+    }
+  }
+
+  void _scheduleTypeAheadAutoClear() {
+    _typeAheadClearTimer?.cancel();
+    _typeAheadClearTimer = Timer(const Duration(seconds: 5), () {
+      clearTypeAhead();
+    });
+  }
+
+  List<int> _findMatchesForQuery(String q) {
+    if (q.isEmpty) return const [];
+    final tab = activeTab;
+    final total = tab.summary.totalRows;
+    final prefixMatches = <int>[];
+    final substringMatches = <int>[];
+
+    for (int i = 0; i < total; i++) {
+      final row = getRow(tab, i);
+      if (row == null || row.isParent) continue;
+      final lower = row.name.toLowerCase();
+      if (lower.startsWith(q)) {
+        prefixMatches.add(i);
+      } else if (lower.contains(q)) {
+        substringMatches.add(i);
+      }
+    }
+    return prefixMatches.isNotEmpty ? prefixMatches : substringMatches;
+  }
+
+  void _recomputeTypeAheadMatches({required bool jumpToFirst}) {
+    final matches = _findMatchesForQuery(typeAheadQuery);
+    typeAheadMatchIndices = matches;
+    if (matches.isEmpty) {
+      typeAheadCurrentMatchPos = 0;
+      statusBanner = '🔤 No file matching "$typeAheadQuery" in current folder (Press ⌘F to search subfolders)';
+      notifyListeners();
+      return;
+    }
+    if (jumpToFirst || typeAheadCurrentMatchPos >= matches.length) {
+      typeAheadCurrentMatchPos = 0;
+    }
+    final targetRow = matches[typeAheadCurrentMatchPos];
+    activeTab.cursorIndex = targetRow;
+    _scrollCursorIntoView(activeTab);
+    final matchedEntry = getRow(activeTab, targetRow);
+    statusBanner =
+        '🔤 Jump: "$typeAheadQuery" → ${matchedEntry?.name ?? ""} (${typeAheadCurrentMatchPos + 1}/${matches.length})';
+    notifyListeners();
+  }
+
+  void cycleTypeAheadMatch(int delta) {
+    if (typeAheadMatchIndices.isEmpty) return;
+    final len = typeAheadMatchIndices.length;
+    typeAheadCurrentMatchPos = (typeAheadCurrentMatchPos + delta) % len;
+    if (typeAheadCurrentMatchPos < 0) {
+      typeAheadCurrentMatchPos += len;
+    }
+    final targetRow = typeAheadMatchIndices[typeAheadCurrentMatchPos];
+    activeTab.cursorIndex = targetRow;
+    _scrollCursorIntoView(activeTab);
+    final matchedEntry = getRow(activeTab, targetRow);
+    statusBanner =
+        '🔤 Jump: "$typeAheadQuery" → ${matchedEntry?.name ?? ""} (${typeAheadCurrentMatchPos + 1}/$len)';
+    _scheduleTypeAheadAutoClear();
+    notifyListeners();
+  }
+
+  void convertTypeAheadToFilter() {
+    if (typeAheadQuery.isEmpty) {
+      toggleQuickFilterBar();
+      return;
+    }
+    final q = typeAheadQuery;
+    clearTypeAhead();
+    filterBarVisible = true;
+    setQuickFilter(q);
+    statusBanner = 'Filtered pane to "$q" (Press Esc to clear)';
+  }
+
+  // --- Easy Recursive File Search (⌘F / Alt+F7) ---
+  void openFileSearch({String? initialQuery}) {
+    closeContextMenu();
+    final seed = initialQuery ?? (typeAheadQuery.isNotEmpty ? typeAheadQuery : '');
+    clearTypeAhead();
+    if (seed.isNotEmpty) {
+      searchNameController.text = seed;
+      searchNameController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: seed.length,
+      );
+    }
+    activeDialog = ActiveDialog.fileSearch;
+    runFileSearch();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (activeDialog == ActiveDialog.fileSearch) {
+        searchNameFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void runFileSearch() {
+    final root = activeTab.summary.currentPath;
+    searchResult = _bridge.searchDirectory(
+      root,
+      nameQuery: searchNameController.text,
+      contentQuery: searchContentController.text,
+      recursive: searchRecursive,
+      showHidden: showHidden,
+      maxResults: 300,
+    );
+    final count = searchResult?.items.length ?? 0;
+    searchSelectedIndex = count == 0
+        ? 0
+        : searchSelectedIndex.clamp(0, count - 1);
+    statusBanner =
+        '🔍 Found $count matching item(s) in $root (${searchResult?.scannedCount ?? 0} scanned)';
+    notifyListeners();
+  }
+
+  void toggleSearchRecursive() {
+    searchRecursive = !searchRecursive;
+    runFileSearch();
+  }
+
+  void moveSearchSelection(int delta) {
+    final items = searchResult?.items ?? const [];
+    if (items.isEmpty) return;
+    searchSelectedIndex = (searchSelectedIndex + delta).clamp(
+      0,
+      items.length - 1,
+    );
+    notifyListeners();
+  }
+
+  void jumpToSearchHit([int? index, bool inOtherPane = false]) {
+    final items = searchResult?.items ?? const [];
+    if (items.isEmpty) {
+      closeDialog();
+      return;
+    }
+    final idx = (index ?? searchSelectedIndex).clamp(0, items.length - 1);
+    final hit = items[idx];
+    final targetSide = inOtherPane
+        ? (activeSide == PaneSide.left ? PaneSide.right : PaneSide.left)
+        : activeSide;
+    final queryHighlight = searchNameController.text
+        .trim()
+        .replaceAll('*', '')
+        .toLowerCase();
+
+    activeDialog = ActiveDialog.none;
+    activeSide = targetSide;
+    navigateToPath(
+      hit.parentDir,
+      side: targetSide,
+      selectChildName: hit.name,
+    );
+    if (queryHighlight.isNotEmpty) {
+      typeAheadQuery = queryHighlight;
+      _recomputeTypeAheadMatches(jumpToFirst: false);
+      // Keep cursor on the exact hit we jumped to
+      final tab = tabFor(targetSide);
+      for (int i = 0; i < tab.summary.totalRows; i++) {
+        final row = getRow(tab, i);
+        if (row != null && row.name == hit.name) {
+          tab.cursorIndex = i;
+          final pos = typeAheadMatchIndices.indexOf(i);
+          if (pos >= 0) typeAheadCurrentMatchPos = pos;
+          _scrollCursorIntoView(tab);
+          break;
+        }
+      }
+      _scheduleTypeAheadAutoClear();
+    }
+    statusBanner = '🔍 Jumped to ${hit.fullPath}';
+    notifyListeners();
+  }
+
+  void viewSearchHitInLister([int? index]) {
+    final items = searchResult?.items ?? const [];
+    if (items.isEmpty) return;
+    final idx = (index ?? searchSelectedIndex).clamp(0, items.length - 1);
+    final hit = items[idx];
+    if (hit.isDir) {
+      jumpToSearchHit(idx);
+      return;
+    }
+    listerOffset = 0;
+    listerHexMode = false;
+    listerSlice = _bridge.readListerSlice(
+      hit.fullPath,
+      offset: 0,
+      maxBytes: 24576,
+      hexMode: false,
+    );
+    activeDialog = ActiveDialog.lister;
+    notifyListeners();
+  }
+
+  Future<void> openSearchHitDefault([int? index]) async {
+    final items = searchResult?.items ?? const [];
+    if (items.isEmpty) return;
+    final idx = (index ?? searchSelectedIndex).clamp(0, items.length - 1);
+    final hit = items[idx];
+    if (hit.isDir) {
+      jumpToSearchHit(idx);
+      return;
+    }
+    activeDialog = ActiveDialog.none;
+    notifyListeners();
+    await NativeMacosBridge.openFile(hit.fullPath);
   }
 
   // --- ★ Directory Hotlist & macOS Favorites (⌘B / Ctrl+D) ---

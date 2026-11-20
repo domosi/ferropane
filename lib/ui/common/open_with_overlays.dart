@@ -609,6 +609,12 @@ class FileRowContextMenuOverlay extends StatelessWidget {
                   onTap: () => controller.openFavoritesHotlist(),
                 ),
                 menuRow(
+                  label: '🔍 Find Files in Folder…',
+                  shortcut: '⌘F',
+                  labelColor: p.primaryAccent,
+                  onTap: () => controller.openFileSearch(),
+                ),
+                menuRow(
                   label: 'Deep Compare Folders…',
                   shortcut: '⌘D',
                   labelColor: p.primaryAccent,

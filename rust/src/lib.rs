@@ -3,6 +3,7 @@ pub mod entry;
 pub mod lister;
 pub mod ops;
 pub mod pane;
+pub mod search;
 
 use entry::SortField;
 use pane::PaneState;
@@ -267,6 +268,29 @@ pub extern "C" fn tc_compare_dirs(
     let left_dir = cstr_to_string(left_dir_ptr);
     let right_dir = cstr_to_string(right_dir_ptr);
     let res = compare::compare_directories(&left_dir, &right_dir, compare_content, show_hidden);
+    string_to_cchar(serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string()))
+}
+
+#[no_mangle]
+pub extern "C" fn tc_search_dir(
+    root_dir_ptr: *const c_char,
+    name_query_ptr: *const c_char,
+    content_query_ptr: *const c_char,
+    recursive: bool,
+    show_hidden: bool,
+    max_results: usize,
+) -> *mut c_char {
+    let root_dir = cstr_to_string(root_dir_ptr);
+    let name_query = cstr_to_string(name_query_ptr);
+    let content_query = cstr_to_string(content_query_ptr);
+    let res = search::search_directory(
+        &root_dir,
+        &name_query,
+        &content_query,
+        recursive,
+        show_hidden,
+        max_results,
+    );
     string_to_cchar(serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string()))
 }
 

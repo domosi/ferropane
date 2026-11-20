@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import '../../core/models.dart';
 import '../../core/theme_palette.dart';
 import '../../state/commander_controller.dart';
+import '../common/file_search_modal.dart';
 
 class MacosPaneView extends StatelessWidget {
   final CommanderController controller;
@@ -40,6 +41,8 @@ class MacosPaneView extends StatelessWidget {
             _buildPathBar(p, summary),
             _buildColumnHeaders(p, summary),
             Expanded(child: _buildFileList(p, summary)),
+            if (isActive && controller.typeAheadQuery.isNotEmpty)
+              TypeAheadJumpBar(controller: controller),
             if (isActive &&
                 (controller.filterBarVisible ||
                     summary.filterQuery.isNotEmpty))
@@ -458,12 +461,17 @@ class MacosPaneView extends StatelessWidget {
           return const SizedBox.shrink();
         }
         final isCursor = index == tab.cursorIndex;
+        final highlightQuery =
+            (isActive && controller.typeAheadQuery.isNotEmpty)
+            ? controller.typeAheadQuery
+            : summary.filterQuery;
         return _MacosFileRow(
           palette: p,
           entry: entry,
           index: index,
           isCursor: isCursor,
           isPaneActive: isActive,
+          highlightQuery: highlightQuery,
           onTap: () =>
               controller.setCursor(side, index, ensureVisible: false),
           onDoubleTap: () {
@@ -558,6 +566,7 @@ class _MacosFileRow extends StatelessWidget {
   final int index;
   final bool isCursor;
   final bool isPaneActive;
+  final String highlightQuery;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
   final GestureTapDownCallback onSecondaryTapDown;
@@ -568,6 +577,7 @@ class _MacosFileRow extends StatelessWidget {
     required this.index,
     required this.isCursor,
     required this.isPaneActive,
+    required this.highlightQuery,
     required this.onTap,
     required this.onDoubleTap,
     required this.onSecondaryTapDown,
@@ -659,11 +669,14 @@ class _MacosFileRow extends StatelessWidget {
                   Icon(iconData, size: 13.5, color: iconColor),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(
-                      entry.isDir && !entry.isParent
+                    child: buildHighlightedNameText(
+                      displayText: entry.isDir && !entry.isParent
                           ? '[${entry.name}]'
                           : entry.stem,
-                      style: TextStyle(
+                      query: entry.isParent ? '' : highlightQuery,
+                      palette: palette,
+                      isActiveCursor: activeCur,
+                      baseStyle: TextStyle(
                         color: nameColor,
                         fontSize: 12,
                         fontFamily: 'Menlo',
@@ -672,7 +685,6 @@ class _MacosFileRow extends StatelessWidget {
                             ? FontWeight.w700
                             : FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
