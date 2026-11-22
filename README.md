@@ -51,7 +51,9 @@ Grab the signed & Apple-notarized macOS Apple Silicon (`M1` / `M2` / `M3` / `M4`
 | `Space` | Toggle selection & calculate recursive directory size |
 | `Insert` / `⇧↓` | Toggle selection and advance cursor |
 | `*` / `+` | Invert selection / Select by wildcard pattern |
-| `/` or `⌘F` | Toggle inline Quick Filter bar |
+| `a`–`z` / `0`–`9` | **Type-Ahead Prefix Jump & Inline Letter Highlighting** (`Ctrl+N`/`Ctrl+P` to cycle matches) |
+| `/` or `⇧⌘F` | Toggle inline Quick Filter bar (or filter to active Type-Ahead letters) |
+| `⌘F` or `Option+F7` | Open **Recursive Find Files & Content Search** modal (`rust/src/search.rs`) |
 | `⌘G` | Go to directory path |
 | `⌘B` / `Ctrl+D` | Open **★ Directory Hotlist & macOS Favorites** (`1`–`9` instant jump, `P` to pin/unpin) |
 | `⌘T` / `⌘W` | New folder tab / Close active tab |
