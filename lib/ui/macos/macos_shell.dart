@@ -78,7 +78,7 @@ class MacosCommanderShell extends StatelessWidget {
                 style: TextStyle(
                   color: active ? p.cursorActiveText : p.fileImportantText,
                   fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -107,7 +107,7 @@ class MacosCommanderShell extends StatelessWidget {
             style: TextStyle(
               color: p.fileImportantText,
               fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(width: 10),
@@ -303,7 +303,7 @@ class MacosCommanderShell extends StatelessWidget {
                 color: p.primaryAccent,
                 fontSize: 11.5,
                 fontFamily: 'Menlo',
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 8),
@@ -318,9 +318,7 @@ class MacosCommanderShell extends StatelessWidget {
                       : p.mutedText,
                   fontSize: 11.5,
                   fontFamily: 'Menlo',
-                  fontWeight: focusedName.isNotEmpty && focusedName != '..'
-                      ? FontWeight.w600
-                      : FontWeight.w400,
+                  fontWeight: FontWeight.w400,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -360,7 +358,7 @@ class MacosCommanderShell extends StatelessWidget {
                       color: p.primaryAccent,
                       fontSize: 11.5,
                       fontFamily: 'Menlo',
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -370,7 +368,7 @@ class MacosCommanderShell extends StatelessWidget {
                   style: TextStyle(
                     color: p.fileImportantText,
                     fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],

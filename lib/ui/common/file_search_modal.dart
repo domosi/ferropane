@@ -28,7 +28,7 @@ Widget buildHighlightedNameText({
               text: '.$extSuffix',
               style: baseStyle.copyWith(
                 color: extColor ?? palette.primaryAccent,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -85,7 +85,7 @@ Widget buildHighlightedNameText({
           style: baseStyle.copyWith(
             backgroundColor: highlightBg,
             color: highlightFg,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (after.isNotEmpty) TextSpan(text: after),

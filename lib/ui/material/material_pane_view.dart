@@ -158,7 +158,7 @@ class MaterialPaneView extends StatelessWidget {
                                         style: TextStyle(
                                           fontFamily: 'Menlo',
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w500,
                                           color: selected && isActive
                                               ? p.cursorActiveText
                                               : p.mutedText,
@@ -188,8 +188,8 @@ class MaterialPaneView extends StatelessWidget {
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: selected
-                                                        ? FontWeight.w800
-                                                        : FontWeight.w600,
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w400,
                                                     color: selected
                                                         ? p.fileImportantText
                                                         : p.semiHighlightedText,
@@ -215,7 +215,7 @@ class MaterialPaneView extends StatelessWidget {
                                                   style: TextStyle(
                                                     fontFamily: 'Menlo',
                                                     fontSize: 9.5,
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w500,
                                                     color: selected
                                                         ? p.primaryAccent
                                                         : p.mutedText,
@@ -229,6 +229,7 @@ class MaterialPaneView extends StatelessWidget {
                                             style: TextStyle(
                                               fontFamily: 'Menlo',
                                               fontSize: 9.5,
+                                              fontWeight: FontWeight.w400,
                                               color: p.mutedText,
                                             ),
                                             overflow: TextOverflow.ellipsis,
@@ -312,7 +313,7 @@ class MaterialPaneView extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Menlo',
                 fontSize: 10,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: isActive ? p.cursorActiveText : p.mutedText,
               ),
             ),
@@ -430,8 +431,8 @@ class MaterialPaneView extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: i == segments.length - 1
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                                ? FontWeight.w500
+                                : FontWeight.w400,
                             color: i == segments.length - 1 && isActive
                                 ? p.cursorActiveText
                                 : p.semiHighlightedText,
@@ -460,7 +461,7 @@ class MaterialPaneView extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Menlo',
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   color: p.fileImportantText,
                 ),
               ),
@@ -502,7 +503,7 @@ class MaterialPaneView extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Menlo',
                       fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       color: controller.isPathPinned(summary.currentPath)
                           ? p.selectedText
                           : p.primaryAccent,
@@ -534,7 +535,7 @@ class MaterialPaneView extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Menlo',
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w400,
               color: p.semiHighlightedText,
             ),
           ),
@@ -574,7 +575,7 @@ class MaterialPaneView extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 11.5,
-                  fontWeight: sorted ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: sorted ? FontWeight.w600 : FontWeight.w400,
                   color: sorted ? p.primaryAccent : p.semiHighlightedText,
                 ),
               ),
@@ -752,8 +753,8 @@ class MaterialPaneView extends StatelessWidget {
                                       entry.isDir ||
                                           entry.selected ||
                                           activeCur
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
+                                      ? FontWeight.w500
+                                      : FontWeight.w400,
                                 ),
                               ),
                             ),
@@ -778,7 +779,7 @@ class MaterialPaneView extends StatelessWidget {
                                     fontFamily: 'Menlo',
                                     fontSize: 9.5,
                                     color: p.mutedText,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),
@@ -808,7 +809,7 @@ class MaterialPaneView extends StatelessWidget {
                                     style: TextStyle(
                                       fontFamily: 'Menlo',
                                       fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w500,
                                       color: p.primaryAccent,
                                     ),
                                   ),
@@ -829,9 +830,7 @@ class MaterialPaneView extends StatelessWidget {
                         fontFamily: 'Menlo',
                         fontSize: 11.5,
                         color: sizeColor,
-                        fontWeight: entry.isDir
-                            ? FontWeight.w500
-                            : FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

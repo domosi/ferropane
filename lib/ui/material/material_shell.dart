@@ -62,7 +62,7 @@ class MaterialCommanderShell extends StatelessWidget {
           Text(
             'FerroPane',
             style: TextStyle(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               fontSize: 15,
               color: p.fileImportantText,
             ),
@@ -349,7 +349,7 @@ class MaterialCommanderShell extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Menlo',
                 fontSize: 11.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w500,
                 color: p.primaryAccent,
               ),
             ),
@@ -362,9 +362,7 @@ class MaterialCommanderShell extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Menlo',
                   fontSize: 11.5,
-                  fontWeight: focusedName.isNotEmpty && focusedName != '..'
-                      ? FontWeight.w600
-                      : FontWeight.w400,
+                  fontWeight: FontWeight.w400,
                   color: focusedName.isNotEmpty && focusedName != '..'
                       ? p.fileImportantText
                       : p.mutedText,
@@ -406,14 +404,14 @@ class MaterialCommanderShell extends StatelessWidget {
                     text: '$keyBadge ',
                     style: TextStyle(
                       color: p.primaryAccent,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   TextSpan(
                     text: label,
                     style: TextStyle(
                       color: p.fileImportantText,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

@@ -159,7 +159,7 @@ class MacosPaneView extends StatelessWidget {
                                               : p.mutedText,
                                           fontSize: 10,
                                           fontFamily: 'Menlo',
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
@@ -189,8 +189,8 @@ class MacosPaneView extends StatelessWidget {
                                                         : p.semiHighlightedText,
                                                     fontSize: 12,
                                                     fontWeight: selected
-                                                        ? FontWeight.w800
-                                                        : FontWeight.w600,
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w400,
                                                   ),
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -216,7 +216,7 @@ class MacosPaneView extends StatelessWidget {
                                                         : p.mutedText,
                                                     fontSize: 9.5,
                                                     fontFamily: 'Menlo',
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
                                               ),
@@ -228,6 +228,7 @@ class MacosPaneView extends StatelessWidget {
                                               color: p.mutedText,
                                               fontSize: 9.5,
                                               fontFamily: 'Menlo',
+                                              fontWeight: FontWeight.w400,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -308,7 +309,7 @@ class MacosPaneView extends StatelessWidget {
                 color: isActive ? p.cursorActiveText : p.mutedText,
                 fontSize: 10,
                 fontFamily: 'Menlo',
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -423,8 +424,8 @@ class MacosPaneView extends StatelessWidget {
                                 : p.semiHighlightedText,
                             fontSize: 11.5,
                             fontWeight: i == segments.length - 1
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                                ? FontWeight.w500
+                                : FontWeight.w400,
                           ),
                         ),
                       ),
@@ -453,7 +454,7 @@ class MacosPaneView extends StatelessWidget {
                   color: p.fileImportantText,
                   fontSize: 10.5,
                   fontFamily: 'Menlo',
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -496,7 +497,7 @@ class MacosPaneView extends StatelessWidget {
                           : p.primaryAccent,
                       fontSize: 10.5,
                       fontFamily: 'Menlo',
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -529,7 +530,7 @@ class MacosPaneView extends StatelessWidget {
               color: p.semiHighlightedText,
               fontSize: 11,
               fontFamily: 'Menlo',
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -561,7 +562,7 @@ class MacosPaneView extends StatelessWidget {
             style: TextStyle(
               color: isSorted ? p.primaryAccent : p.semiHighlightedText,
               fontSize: 11,
-              fontWeight: isSorted ? FontWeight.w800 : FontWeight.w600,
+              fontWeight: isSorted ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
         ),
@@ -875,8 +876,8 @@ class _MacosFileRow extends StatelessWidget {
                               fontSize: 12.5,
                               fontWeight:
                                   entry.isDir || entry.selected || activeCur
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
                             ),
                           ),
                         ),
@@ -901,7 +902,7 @@ class _MacosFileRow extends StatelessWidget {
                                 color: palette.mutedText,
                                 fontSize: 9.5,
                                 fontFamily: 'Menlo',
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),
@@ -932,7 +933,7 @@ class _MacosFileRow extends StatelessWidget {
                                   color: palette.primaryAccent,
                                   fontSize: 9.5,
                                   fontFamily: 'Menlo',
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -952,9 +953,7 @@ class _MacosFileRow extends StatelessWidget {
                     color: sizeColor,
                     fontSize: 11.5,
                     fontFamily: 'Menlo',
-                    fontWeight: entry.isDir
-                        ? FontWeight.w500
-                        : FontWeight.w600,
+                    fontWeight: FontWeight.w400,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
