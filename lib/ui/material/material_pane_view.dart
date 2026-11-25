@@ -108,146 +108,152 @@ class MaterialPaneView extends StatelessWidget {
                         maxWidth: 240,
                       ),
                       margin: const EdgeInsets.only(right: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
-                      ),
                       decoration: BoxDecoration(
                         color: selected ? activeSurface : p.footerBg,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(10),
                         ),
                         border: Border(
-                          top: BorderSide(
-                            color: selected
-                                ? (isActive
-                                      ? p.primaryAccent
-                                      : p.semiHighlightedText)
-                                : p.dividerColor,
-                            width: selected ? 3.0 : 1.0,
-                          ),
-                          left: BorderSide(
-                            color: selected
-                                ? (isActive
-                                      ? p.primaryAccent
-                                      : p.semiHighlightedText)
-                                : p.dividerColor,
-                            width: 1,
-                          ),
-                          right: BorderSide(
-                            color: selected
-                                ? (isActive
-                                      ? p.primaryAccent
-                                      : p.semiHighlightedText)
-                                : p.dividerColor,
-                            width: 1,
-                          ),
+                          top: BorderSide(color: p.dividerColor, width: 1),
+                          left: BorderSide(color: p.dividerColor, width: 1),
+                          right: BorderSide(color: p.dividerColor, width: 1),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1.5,
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(9),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              height: 2.5,
+                              color: selected
+                                  ? (isActive
+                                        ? p.primaryAccent
+                                        : p.semiHighlightedText)
+                                  : Colors.transparent,
                             ),
-                            decoration: BoxDecoration(
-                              color: selected && isActive
-                                  ? p.primaryAccent
-                                  : p.paneBgOdd,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '${idx + 1}',
-                              style: TextStyle(
-                                fontFamily: 'Menlo',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: selected && isActive
-                                    ? p.cursorActiveText
-                                    : p.mutedText,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            tabIcon,
-                            size: 15,
-                            color: selected ? p.dirIcon : p.mutedText,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Flexible(
-                                      child: Text(
-                                        t.title,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: selected
-                                              ? FontWeight.w800
-                                              : FontWeight.w600,
-                                          color: selected
-                                              ? p.fileImportantText
-                                              : p.semiHighlightedText,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 5),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 5,
-                                        vertical: 0.5,
+                                        vertical: 1.5,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: p.paneBgOdd,
+                                        color: selected && isActive
+                                            ? p.primaryAccent
+                                            : p.paneBgOdd,
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        '${t.itemCount}',
+                                        '${idx + 1}',
                                         style: TextStyle(
                                           fontFamily: 'Menlo',
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: selected
-                                              ? p.primaryAccent
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: selected && isActive
+                                              ? p.cursorActiveText
                                               : p.mutedText,
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      tabIcon,
+                                      size: 15,
+                                      color: selected ? p.dirIcon : p.mutedText,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  t.title,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: selected
+                                                        ? FontWeight.w800
+                                                        : FontWeight.w600,
+                                                    color: selected
+                                                        ? p.fileImportantText
+                                                        : p.semiHighlightedText,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 0.5,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: p.paneBgOdd,
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  '${t.itemCount}',
+                                                  style: TextStyle(
+                                                    fontFamily: 'Menlo',
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: selected
+                                                        ? p.primaryAccent
+                                                        : p.mutedText,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            t.parentContextLabel,
+                                            style: TextStyle(
+                                              fontFamily: 'Menlo',
+                                              fontSize: 9.5,
+                                              color: p.mutedText,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (tabs.length > 1) ...[
+                                      const SizedBox(width: 6),
+                                      InkWell(
+                                        onTap: () =>
+                                            controller.closeTab(side, idx),
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          size: 13,
+                                          color: p.mutedText,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
-                                Text(
-                                  t.parentContextLabel,
-                                  style: TextStyle(
-                                    fontFamily: 'Menlo',
-                                    fontSize: 9.5,
-                                    color: p.mutedText,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (tabs.length > 1) ...[
-                            const SizedBox(width: 6),
-                            InkWell(
-                              onTap: () => controller.closeTab(side, idx),
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: 13,
-                                color: p.mutedText,
                               ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -594,17 +600,16 @@ class MaterialPaneView extends StatelessWidget {
       child: Row(
         children: [
           colHeader('Name', SortField.name, flex: 5),
-          colHeader('Type', SortField.extension, width: 76),
           colHeader(
             'Size',
             SortField.size,
-            width: 98,
+            width: 90,
             alignment: Alignment.centerRight,
           ),
           colHeader(
             'Modified',
             SortField.modified,
-            width: 140,
+            width: 134,
             alignment: Alignment.centerRight,
           ),
         ],
@@ -641,9 +646,9 @@ class MaterialPaneView extends StatelessWidget {
         if (isRenaming) {
           rowBg = p.selectedRowBg;
         } else if (activeCur) {
-          rowBg = p.cursorActiveBg;
+          rowBg = p.rowCursorBg;
         } else if (isCursor && !isActive) {
-          rowBg = p.cursorInactiveBg;
+          rowBg = p.cursorInactiveBg.withValues(alpha: 0.45);
         } else if (entry.selected) {
           rowBg = p.selectedRowBg;
         } else {
@@ -656,9 +661,7 @@ class MaterialPaneView extends StatelessWidget {
         );
         final extColor = p.resolveExtColor(entry, isActiveCursor: activeCur);
         final sizeColor = p.resolveSizeColor(entry, isActiveCursor: activeCur);
-        final metaColor = activeCur
-            ? p.cursorActiveText.withValues(alpha: 0.82)
-            : entry.selected
+        final metaColor = entry.selected
             ? p.selectedText.withValues(alpha: 0.85)
             : p.mutedText;
 
@@ -678,13 +681,7 @@ class MaterialPaneView extends StatelessWidget {
             ? Icons.link_rounded
             : Icons.insert_drive_file_rounded;
 
-        final iconColor = activeCur
-            ? p.cursorActiveText
-            : entry.selected
-            ? p.selectedText
-            : entry.isDir
-            ? p.dirIcon
-            : nameColor.withValues(alpha: 0.9);
+        final iconColor = p.resolveEntryIconColor(entry);
 
         final highlightQuery =
             (isActive && controller.typeAheadQuery.isNotEmpty)
@@ -716,14 +713,14 @@ class MaterialPaneView extends StatelessWidget {
                       left: BorderSide(
                         color: isRenaming
                             ? p.selectedText
-                            : p.cursorActiveBorder,
-                        width: 3.5,
+                            : p.primaryAccent,
+                        width: 4.0,
                       ),
                     )
                   : null,
             ),
             padding: EdgeInsets.only(
-              left: (activeCur || isRenaming) ? 6.5 : 10,
+              left: (activeCur || isRenaming) ? 6.0 : 10,
               right: 10,
             ),
             child: Row(
@@ -736,7 +733,7 @@ class MaterialPaneView extends StatelessWidget {
                           children: [
                             Icon(icon, size: 16, color: iconColor),
                             const SizedBox(width: 8),
-                            Expanded(
+                            Flexible(
                               child: buildHighlightedNameText(
                                 displayText: entry.isDir
                                     ? entry.name
@@ -760,6 +757,32 @@ class MaterialPaneView extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            if (!entry.isParent) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5.5,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: p.footerBg,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: p.dividerColor,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  entry.typeBadge,
+                                  style: TextStyle(
+                                    fontFamily: 'Menlo',
+                                    fontSize: 9.5,
+                                    color: p.mutedText,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                             if (activeCur && !entry.isParent) ...[
                               const SizedBox(width: 6),
                               InkWell(
@@ -773,18 +796,20 @@ class MaterialPaneView extends StatelessWidget {
                                     vertical: 1.5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: p.cursorActiveText.withValues(
-                                      alpha: 0.18,
-                                    ),
+                                    color: p.paneBgEven,
                                     borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: p.primaryAccent,
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Text(
                                     '✎ Rename',
                                     style: TextStyle(
                                       fontFamily: 'Menlo',
-                                      fontSize: 10,
+                                      fontSize: 9.5,
                                       fontWeight: FontWeight.w700,
-                                      color: p.cursorActiveText,
+                                      color: p.primaryAccent,
                                     ),
                                   ),
                                 ),
@@ -794,35 +819,7 @@ class MaterialPaneView extends StatelessWidget {
                         ),
                 ),
                 SizedBox(
-                  width: 76,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1.5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: activeCur
-                            ? p.cursorActiveText.withValues(alpha: 0.16)
-                            : p.headerBg,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        entry.typeBadge,
-                        style: TextStyle(
-                          fontFamily: 'Menlo',
-                          fontSize: 10,
-                          color: extColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 98,
+                  width: 90,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Text(
@@ -832,25 +829,24 @@ class MaterialPaneView extends StatelessWidget {
                         fontFamily: 'Menlo',
                         fontSize: 11.5,
                         color: sizeColor,
-                        fontWeight:
-                            (entry.size >= 10 * 1024 * 1024 ||
-                                entry.sizeCalculated && entry.isDir)
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        fontWeight: entry.isDir
+                            ? FontWeight.w500
+                            : FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
                 SizedBox(
-                  width: 140,
+                  width: 134,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
                       entry.displayDate,
                       textAlign: TextAlign.right,
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontFamily: 'Menlo',
+                        fontSize: 11,
                         color: metaColor,
                       ),
                       overflow: TextOverflow.ellipsis,

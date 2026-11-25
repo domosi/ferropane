@@ -104,6 +104,22 @@ class TcThemePalette {
 
   bool get isLight => brightness == Brightness.light;
 
+  /// Soft, readable row highlight tint for the active cursor row (Design B: soft surface tint + 4px left accent bar)
+  Color get rowCursorBg {
+    switch (id) {
+      case TcThemeId.solarDay:
+        return const Color(0xFFE0ECFF);
+      case TcThemeId.cyberDark:
+        return const Color(0xFF17263C);
+      case TcThemeId.classicTc:
+        return const Color(0xFF002D6B);
+      case TcThemeId.dracula:
+        return const Color(0xFF312C48);
+      case TcThemeId.emerald:
+        return const Color(0xFF14352C);
+    }
+  }
+
   static TcThemePalette of(TcThemeId id) {
     switch (id) {
       case TcThemeId.cyberDark:
@@ -288,54 +304,44 @@ class TcThemePalette {
     }
   }
 
-  /// Resolves the foreground highlight color for a file row based on importance:
-  /// - Selected -> selectedText (Vibrant Gold/Yellow)
-  /// - Active cursor -> cursorActiveText
-  /// - Directory -> dirText (Vibrant Sky/Cyan/Cobalt)
-  /// - Hidden dotfile -> hiddenFileText (Subdued)
-  /// - Executable / Archive / Code / Media -> Semantic category highlight
+  /// Resolves the foreground color for a file row (Design B: one calm, high-contrast neutral color for all filenames)
   Color resolveEntryNameColor(
     DirEntryModel entry, {
     required bool isActiveCursor,
   }) {
     if (entry.selected) return selectedText;
-    if (isActiveCursor) return cursorActiveText;
-    if (entry.isDir) return dirText;
     if (entry.isHidden) return hiddenFileText;
-
-    final ext = entry.ext.toLowerCase();
-    if (_archiveExts.contains(ext)) return archiveText;
-    if (_execExts.contains(ext) || entry.permissions.contains('x')) {
-      return execText;
-    }
-    if (_codeExts.contains(ext)) return codeText;
-    if (_mediaExts.contains(ext)) return mediaText;
     return fileImportantText;
   }
 
-  /// Semi-highlighted color for file extension column
+  /// Accent color for the inline `.ext` suffix
   Color resolveExtColor(DirEntryModel entry, {required bool isActiveCursor}) {
     if (entry.selected) return selectedText;
-    if (isActiveCursor) return cursorActiveText.withValues(alpha: 0.92);
+    if (entry.isHidden) return hiddenFileText;
+    return primaryAccent;
+  }
+
+  /// Calm, readable color for the Size column
+  Color resolveSizeColor(DirEntryModel entry, {required bool isActiveCursor}) {
+    if (entry.selected) return selectedText;
+    if (entry.isParent || (entry.isDir && !entry.sizeCalculated)) {
+      return mutedText;
+    }
+    return fileImportantText;
+  }
+
+  /// Category-tinted icon color so icons carry semantic cues while filename text remains calm and neutral
+  Color resolveEntryIconColor(DirEntryModel entry) {
+    if (entry.selected) return selectedText;
+    if (entry.isParent) return primaryAccent;
+    if (entry.isAppBundle) return execText;
+    if (entry.isDir) return dirIcon;
     if (entry.isHidden) return hiddenFileText;
     final ext = entry.ext.toLowerCase();
     if (_archiveExts.contains(ext)) return archiveText;
-    if (_execExts.contains(ext)) return execText;
+    if (_execExts.contains(ext) || entry.isExecutableScript) return execText;
     if (_codeExts.contains(ext)) return codeText;
     if (_mediaExts.contains(ext)) return mediaText;
-    return extBadgeText;
-  }
-
-  /// Semi-highlighted color for Size column (highlights files >= 10 MB or calculated folders)
-  Color resolveSizeColor(DirEntryModel entry, {required bool isActiveCursor}) {
-    if (entry.selected) return selectedText;
-    if (isActiveCursor) return cursorActiveText;
-    if (entry.isParent) return mutedText;
-    if (entry.isDir && !entry.sizeCalculated) return semiHighlightedText;
-    if (entry.size >= 10 * 1024 * 1024 ||
-        (entry.isDir && entry.sizeCalculated)) {
-      return largeSizeText;
-    }
     return semiHighlightedText;
   }
 
