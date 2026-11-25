@@ -3,16 +3,38 @@ import '../../core/models.dart';
 import '../../core/theme_palette.dart';
 import '../../state/commander_controller.dart';
 
-/// Builds a RichText widget that highlights any prefix or substring match of [query] inside [displayText].
+/// Builds a RichText widget that highlights any prefix or substring match of [query] inside [displayText],
+/// and optionally highlights an inline `.ext` suffix when [extSuffix] is provided.
 Widget buildHighlightedNameText({
   required String displayText,
   required String query,
   required TextStyle baseStyle,
   required TcThemePalette palette,
   required bool isActiveCursor,
+  String extSuffix = '',
+  Color? extColor,
 }) {
   final cleanQuery = query.trim().replaceAll('*', '').toLowerCase();
   if (cleanQuery.isEmpty) {
+    if (extSuffix.isNotEmpty) {
+      return RichText(
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        text: TextSpan(
+          style: baseStyle,
+          children: [
+            TextSpan(text: displayText),
+            TextSpan(
+              text: '.$extSuffix',
+              style: baseStyle.copyWith(
+                color: extColor ?? palette.primaryAccent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Text(
       displayText,
       style: baseStyle,
@@ -20,8 +42,10 @@ Widget buildHighlightedNameText({
     );
   }
 
-  final lowerText = displayText.toLowerCase();
-  // Prefer matching right after '[' for directory names like "[ferropane]"
+  final fullText = extSuffix.isNotEmpty
+      ? '$displayText.$extSuffix'
+      : displayText;
+  final lowerText = fullText.toLowerCase();
   int matchStart = -1;
   if (lowerText.startsWith('[$cleanQuery')) {
     matchStart = 1;
@@ -33,16 +57,16 @@ Widget buildHighlightedNameText({
 
   if (matchStart < 0) {
     return Text(
-      displayText,
+      fullText,
       style: baseStyle,
       overflow: TextOverflow.ellipsis,
     );
   }
 
   final matchEnd = matchStart + cleanQuery.length;
-  final before = displayText.substring(0, matchStart);
-  final matched = displayText.substring(matchStart, matchEnd);
-  final after = displayText.substring(matchEnd);
+  final before = fullText.substring(0, matchStart);
+  final matched = fullText.substring(matchStart, matchEnd);
+  final after = fullText.substring(matchEnd);
 
   final highlightBg = isActiveCursor
       ? const Color(0xFFFFD60A)

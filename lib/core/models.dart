@@ -175,15 +175,58 @@ class DirEntryModel {
     return false;
   }
 
+  String get typeBadge {
+    if (isParent) return 'Parent';
+    if (isAppBundle) return 'APP';
+    if (isDir) return 'Folder';
+    if (ext.isNotEmpty) {
+      final upper = ext.toUpperCase();
+      return upper.length > 6 ? upper.substring(0, 6) : upper;
+    }
+    if (isExecutableScript) return 'EXEC';
+    if (isSymlink) return 'LINK';
+    return 'File';
+  }
+
   String get displayDate {
     if (isParent || modifiedSec <= 0) return '';
     final dt = DateTime.fromMillisecondsSinceEpoch(modifiedSec * 1000);
+    final now = DateTime.now();
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
+
+    final today = DateTime(now.year, now.month, now.day);
+    final fileDay = DateTime(dt.year, dt.month, dt.day);
+    final diffDays = today.difference(fileDay).inDays;
+
+    if (diffDays == 0) {
+      return 'Today $hh:$mm';
+    }
+    if (diffDays == 1) {
+      return 'Yesterday $hh:$mm';
+    }
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final mName = months[(dt.month - 1).clamp(0, 11)];
+    if (dt.year == now.year) {
+      return '$mName ${dt.day}, $hh:$mm';
+    }
     final y = dt.year.toString().padLeft(4, '0');
     final m = dt.month.toString().padLeft(2, '0');
     final d = dt.day.toString().padLeft(2, '0');
-    final hh = dt.hour.toString().padLeft(2, '0');
-    final mm = dt.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $hh:$mm';
+    return '$y-$m-$d';
   }
 }
 

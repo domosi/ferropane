@@ -434,6 +434,12 @@ class MaterialCommanderShell extends StatelessWidget {
       child: Row(
         children: [
           m3KeyButton(
+            Icons.edit_rounded,
+            'F2',
+            'Rename',
+            controller.startInlineRename,
+          ),
+          m3KeyButton(
             Icons.visibility_outlined,
             'F3',
             'View (mmap)',
@@ -454,7 +460,7 @@ class MaterialCommanderShell extends StatelessWidget {
           m3KeyButton(
             Icons.drive_file_move_outline,
             'F6',
-            'Move/Ren',
+            'Move',
             controller.openMoveDialog,
           ),
           m3KeyButton(

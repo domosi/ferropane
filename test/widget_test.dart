@@ -51,11 +51,11 @@ void main() {
       expect(find.byType(CupertinoApp), findsOneWidget);
       expect(find.byType(MaterialApp), findsNothing);
 
-      // 2. Verify Rust FFI populated both panes with natural sorting
-      expect(find.text('[alpha_dir]'), findsOneWidget);
-      expect(find.text('file2'), findsOneWidget);
-      expect(find.text('file10'), findsOneWidget);
-      expect(find.text('target_note'), findsOneWidget);
+      // 2. Verify Rust FFI populated both panes with natural sorting (Design B: no brackets, inline .ext)
+      expect(find.text('alpha_dir'), findsOneWidget);
+      expect(find.text('file2.txt', findRichText: true), findsOneWidget);
+      expect(find.text('file10.txt', findRichText: true), findsOneWidget);
+      expect(find.text('target_note.md', findRichText: true), findsOneWidget);
 
       // 3. Move cursor down to [alpha_dir] and press Space to select & calculate dir size (2.0 KB)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -115,9 +115,9 @@ void main() {
 
       expect(find.byType(MaterialApp), findsOneWidget);
       expect(find.byType(CupertinoApp), findsNothing);
-      expect(find.text('[alpha_dir]'), findsOneWidget);
-      expect(find.text('file2'), findsOneWidget);
-      expect(find.text('target_note'), findsOneWidget);
+      expect(find.text('alpha_dir'), findsOneWidget);
+      expect(find.text('file2.txt', findRichText: true), findsOneWidget);
+      expect(find.text('target_note.md', findRichText: true), findsOneWidget);
     },
   );
 }

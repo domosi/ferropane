@@ -70,6 +70,22 @@ class PaneTabController {
     return segments.isEmpty ? '/' : segments.last;
   }
 
+  int get itemCount => summary.totalFiles + summary.totalDirs;
+
+  String get parentContextLabel {
+    final home = Platform.environment['HOME'] ?? '/Users';
+    final p = displayPath;
+    if (p == '/' || p.isEmpty) return 'Root /';
+    if (p == home) return '/Users/';
+    String clean = p;
+    if (clean.startsWith('$home/')) {
+      clean = '~/${clean.substring(home.length + 1)}';
+    }
+    final lastSlash = clean.lastIndexOf('/');
+    if (lastSlash <= 0) return '/';
+    return '${clean.substring(0, lastSlash)}/';
+  }
+
   void invalidateCache() {
     _cachedStart = -1;
     _cachedCount = 0;
@@ -166,11 +182,20 @@ class CommanderController extends ChangeNotifier {
   DirSearchResultModel? searchResult;
   int searchSelectedIndex = 0;
 
+  // In-Place File & Folder Rename (F2 / Shift+F6) state
+  PaneSide? inlineRenameSide;
+  int? inlineRenameRowIndex;
+  String? inlineRenameOriginalPath;
+  final TextEditingController inlineRenameController = TextEditingController();
+  final FocusNode inlineRenameFocusNode = FocusNode(
+    debugLabel: 'InlineRenameFocus',
+  );
+
   String statusBanner =
-      'Ready — Type letters to jump & highlight | ⌘F: Find Files | ⌘B: Favorites';
+      'Ready — Type letters to jump | F2 / ⇧F6: Rename In-Place | ⌘F: Find Files';
   bool filterBarVisible = false;
 
-  static const double rowExtent = 24.0;
+  static const double rowExtent = 28.0;
 
   CommanderController({
     required SessionData initialSession,
@@ -387,6 +412,11 @@ class CommanderController extends ChangeNotifier {
     String? selectChildName,
   }) {
     clearTypeAhead();
+    if (inlineRenameSide != null) {
+      inlineRenameSide = null;
+      inlineRenameRowIndex = null;
+      inlineRenameOriginalPath = null;
+    }
     final targetSide = side ?? activeSide;
     final tab = tabFor(targetSide);
     final prevPath = tab.summary.currentPath;
@@ -833,6 +863,106 @@ class CommanderController extends ChangeNotifier {
       case ActiveDialog.none:
         break;
     }
+  }
+
+  // --- In-Place File & Folder Renaming (F2 / Shift+F6 / ✎) ---
+  bool get isInlineRenaming =>
+      inlineRenameSide != null && inlineRenameRowIndex != null;
+
+  bool isRowRenaming(PaneSide side, int rowIndex) =>
+      inlineRenameSide == side && inlineRenameRowIndex == rowIndex;
+
+  void startInlineRename({PaneSide? side, int? rowIndex}) {
+    closeContextMenu();
+    clearTypeAhead();
+    final targetSide = side ?? activeSide;
+    activeSide = targetSide;
+    final tab = tabFor(targetSide);
+    final idx = rowIndex ?? tab.cursorIndex;
+    if (rowIndex != null) {
+      tab.cursorIndex = idx;
+    }
+    final entry = getRow(tab, idx);
+    if (entry == null || entry.isParent) return;
+
+    inlineRenameSide = targetSide;
+    inlineRenameRowIndex = idx;
+    inlineRenameOriginalPath = entry.fullPath;
+    inlineRenameController.text = entry.name;
+
+    // Pre-select only the filename stem so the user doesn't accidentally overwrite .ext
+    final stemLen = (!entry.isDir && entry.ext.isNotEmpty)
+        ? entry.stem.length
+        : entry.name.length;
+    inlineRenameController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: stemLen.clamp(0, entry.name.length),
+    );
+    statusBanner =
+        '✎ Renaming "${entry.name}" — Press Enter to save, Esc to cancel';
+    notifyListeners();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isInlineRenaming) {
+        inlineRenameFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void cancelInlineRename() {
+    if (!isInlineRenaming) return;
+    inlineRenameSide = null;
+    inlineRenameRowIndex = null;
+    inlineRenameOriginalPath = null;
+    statusBanner = 'Cancelled rename';
+    notifyListeners();
+  }
+
+  void commitInlineRename() {
+    if (!isInlineRenaming) return;
+    final side = inlineRenameSide!;
+    final oldPath = inlineRenameOriginalPath;
+    final newName = inlineRenameController.text.trim();
+    inlineRenameSide = null;
+    inlineRenameRowIndex = null;
+    inlineRenameOriginalPath = null;
+
+    if (oldPath == null ||
+        newName.isEmpty ||
+        newName.contains('/') ||
+        newName == '..' ||
+        newName == '.') {
+      statusBanner = 'Rename cancelled';
+      notifyListeners();
+      return;
+    }
+
+    final oldName = oldPath.split('/').last;
+    if (newName == oldName) {
+      statusBanner = 'Filename unchanged';
+      notifyListeners();
+      return;
+    }
+
+    final parentDir = File(oldPath).parent.path;
+    final targetPath = '$parentDir/$newName';
+    final res = _bridge.moveItems([oldPath], targetPath);
+    reloadBothPanes();
+
+    // Keep cursor on the newly renamed item
+    final tab = tabFor(side);
+    for (int i = 0; i < tab.summary.totalRows; i++) {
+      final row = getRow(tab, i);
+      if (row != null && row.name == newName) {
+        tab.cursorIndex = i;
+        _scrollCursorIntoView(tab);
+        break;
+      }
+    }
+    statusBanner = res.ok
+        ? '✎ Renamed "$oldName" → "$newName"'
+        : res.message;
+    notifyListeners();
   }
 
   // --- Type-Ahead Prefix Jump & Inline Filename Highlighting ---

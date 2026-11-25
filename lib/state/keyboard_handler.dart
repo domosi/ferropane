@@ -201,6 +201,22 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       return KeyEventResult.ignored;
     }
 
+    // If an inline filename rename is active, handle Enter (save) or Escape (cancel)
+    if (ctrl.isInlineRenaming) {
+      if (key == LogicalKeyboardKey.escape) {
+        ctrl.cancelInlineRename();
+        _rootFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.enter ||
+          key == LogicalKeyboardKey.numpadEnter) {
+        ctrl.commitInlineRename();
+        _rootFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+
     // If an editable text field (like quick filter) currently holds focus, only intercept Escape or Up/Down/Tab
     final primaryFocus = FocusManager.instance.primaryFocus;
     final isEditingText =
@@ -301,7 +317,11 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         ctrl.openDeleteDialog(useTrash: !isShift);
         return KeyEventResult.handled;
       }
-      // Cmd+3..Cmd+8 fallback for MacBook keyboards without Fn held
+      // Cmd+2..Cmd+8 fallback for MacBook keyboards without Fn held
+      if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.keyE) {
+        ctrl.startInlineRename();
+        return KeyEventResult.handled;
+      }
       if (key == LogicalKeyboardKey.digit3) {
         ctrl.openLister();
         return KeyEventResult.handled;
@@ -315,7 +335,11 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.digit6) {
-        ctrl.openMoveDialog();
+        if (isShift) {
+          ctrl.startInlineRename();
+        } else {
+          ctrl.openMoveDialog();
+        }
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.digit7) {
@@ -451,7 +475,11 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       }
     }
 
-    // Function keys F3 - F8
+    // Function keys F2 - F8
+    if (key == LogicalKeyboardKey.f2) {
+      ctrl.startInlineRename();
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.f3) {
       ctrl.openLister();
       return KeyEventResult.handled;
@@ -465,7 +493,11 @@ class _CommanderKeyboardScopeState extends State<CommanderKeyboardScope> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.f6) {
-      ctrl.openMoveDialog();
+      if (isShift) {
+        ctrl.startInlineRename();
+      } else {
+        ctrl.openMoveDialog();
+      }
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.f7) {

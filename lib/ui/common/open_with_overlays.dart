@@ -552,6 +552,12 @@ class FileRowContextMenuOverlay extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   color: p.dividerColor,
                 ),
+                menuRow(
+                  label: '✎ Rename In-Place…',
+                  shortcut: 'F2 / ⇧F6',
+                  labelColor: p.primaryAccent,
+                  onTap: () => controller.startInlineRename(),
+                ),
                 if (!entry.isDir)
                   menuRow(
                     label: 'View in Lister (mmap)',

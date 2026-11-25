@@ -389,6 +389,7 @@ class MacosCommanderShell extends StatelessWidget {
       ),
       child: Row(
         children: [
+          fKeyBtn('F2', 'Rename', controller.startInlineRename),
           fKeyBtn('F3', 'View (mmap)', controller.openLister),
           fKeyBtn(
             'F4',
@@ -396,7 +397,7 @@ class MacosCommanderShell extends StatelessWidget {
             () => controller.triggerSmartF4(forcePicker: true),
           ),
           fKeyBtn('F5', 'Copy (APFS)', controller.openCopyDialog),
-          fKeyBtn('F6', 'Move/Ren', controller.openMoveDialog),
+          fKeyBtn('F6', 'Move', controller.openMoveDialog),
           fKeyBtn('F7', 'MkDir', controller.openMkdirDialog),
           fKeyBtn(
             'F8',

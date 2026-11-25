@@ -31,7 +31,7 @@ class MacosPaneView extends StatelessWidget {
           color: p.paneBgEven,
           border: Border.all(
             color: activeBorderColor,
-            width: isActive ? 1.6 : 1.0,
+            width: isActive ? 1.8 : 1.0,
           ),
         ),
         child: Column(
@@ -54,13 +54,34 @@ class MacosPaneView extends StatelessWidget {
     );
   }
 
+  IconData _iconForTabPath(String path, bool isArchive) {
+    if (isArchive) return CupertinoIcons.archivebox_fill;
+    final lower = path.toLowerCase();
+    if (lower.endsWith('/downloads')) {
+      return CupertinoIcons.arrow_down_circle_fill;
+    }
+    if (lower.endsWith('/desktop')) return CupertinoIcons.desktopcomputer;
+    if (lower.endsWith('/documents')) return CupertinoIcons.doc_text_fill;
+    if (lower == '/applications') return CupertinoIcons.app_badge_fill;
+    if (lower.startsWith('/volumes')) return CupertinoIcons.device_laptop;
+    if (lower.split('/').where((s) => s.isNotEmpty).length <= 2) {
+      return CupertinoIcons.house_fill;
+    }
+    return CupertinoIcons.folder_fill;
+  }
+
+  /// Design B: 2-Line Context Tabs (Folder Name + Item Count on top, Parent Path below)
   Widget _buildTabBar(TcThemePalette p) {
     final tabs = controller.tabsFor(side);
     final activeIdx = controller.activeTabIndexFor(side);
+    final activeSurface = isActive ? p.headerBg : p.paneBgEven;
 
     return Container(
-      height: 29,
-      color: p.footerBg,
+      height: 44,
+      padding: const EdgeInsets.only(left: 6, right: 4, top: 4),
+      decoration: BoxDecoration(
+        color: p.windowBg,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -70,64 +91,162 @@ class MacosPaneView extends StatelessWidget {
               itemBuilder: (context, idx) {
                 final t = tabs[idx];
                 final selected = idx == activeIdx;
+                final tabIcon = _iconForTabPath(
+                  t.displayPath,
+                  t.isInsideArchive,
+                );
+
                 return GestureDetector(
                   onTap: () => controller.selectTab(side, idx),
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 90,
-                      maxWidth: 180,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: selected ? p.paneBgEven : p.footerBg,
-                      border: Border(
-                        right: BorderSide(color: p.dividerColor, width: 1),
-                        top: BorderSide(
-                          color: selected
-                              ? (isActive
-                                    ? p.primaryAccent
-                                    : p.semiHighlightedText)
-                              : const Color(0x00000000),
-                          width: 2.5,
+                  child: Opacity(
+                    opacity: selected ? 1.0 : 0.68,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 135,
+                        maxWidth: 235,
+                      ),
+                      margin: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected ? activeSurface : p.footerBg,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(8),
+                        ),
+                        border: Border(
+                          top: BorderSide(
+                            color: selected
+                                ? (isActive
+                                      ? p.primaryAccent
+                                      : p.semiHighlightedText)
+                                : p.dividerColor,
+                            width: selected ? 2.8 : 1.0,
+                          ),
+                          left: BorderSide(
+                            color: selected
+                                ? (isActive
+                                      ? p.primaryAccent
+                                      : p.semiHighlightedText)
+                                : p.dividerColor,
+                            width: 1,
+                          ),
+                          right: BorderSide(
+                            color: selected
+                                ? (isActive
+                                      ? p.primaryAccent
+                                      : p.semiHighlightedText)
+                                : p.dividerColor,
+                            width: 1,
+                          ),
                         ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          CupertinoIcons.folder_fill,
-                          size: 12.5,
-                          color: selected ? p.dirIcon : p.mutedText,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            t.title,
-                            style: TextStyle(
-                              color: selected
-                                  ? p.fileImportantText
-                                  : p.mutedText,
-                              fontSize: 11.5,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.5,
+                              vertical: 1.5,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            decoration: BoxDecoration(
+                              color: selected && isActive
+                                  ? p.primaryAccent
+                                  : p.paneBgOdd,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${idx + 1}',
+                              style: TextStyle(
+                                color: selected && isActive
+                                    ? p.cursorActiveText
+                                    : p.mutedText,
+                                fontSize: 10,
+                                fontFamily: 'Menlo',
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
-                        if (tabs.length > 1) ...[
                           const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => controller.closeTab(side, idx),
-                            child: Icon(
-                              CupertinoIcons.xmark,
-                              size: 10,
-                              color: p.mutedText,
+                          Icon(
+                            tabIcon,
+                            size: 13.5,
+                            color: selected ? p.dirIcon : p.mutedText,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        t.title,
+                                        style: TextStyle(
+                                          color: selected
+                                              ? p.fileImportantText
+                                              : p.semiHighlightedText,
+                                          fontSize: 12,
+                                          fontWeight: selected
+                                              ? FontWeight.w800
+                                              : FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4.5,
+                                        vertical: 0.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: p.paneBgOdd,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '${t.itemCount}',
+                                        style: TextStyle(
+                                          color: selected
+                                              ? p.primaryAccent
+                                              : p.mutedText,
+                                          fontSize: 9.5,
+                                          fontFamily: 'Menlo',
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  t.parentContextLabel,
+                                  style: TextStyle(
+                                    color: p.mutedText,
+                                    fontSize: 9.5,
+                                    fontFamily: 'Menlo',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
+                          if (tabs.length > 1) ...[
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () => controller.closeTab(side, idx),
+                              child: Icon(
+                                CupertinoIcons.xmark,
+                                size: 10.5,
+                                color: p.mutedText,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 );
@@ -136,11 +255,11 @@ class MacosPaneView extends StatelessWidget {
           ),
           CupertinoButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            minimumSize: const Size(26, 26),
+            minimumSize: const Size(28, 28),
             onPressed: () => controller.addNewTab(side: side),
             child: Icon(
-              CupertinoIcons.plus,
-              size: 13,
+              CupertinoIcons.plus_circle_fill,
+              size: 15,
               color: p.primaryAccent,
             ),
           ),
@@ -154,9 +273,10 @@ class MacosPaneView extends StatelessWidget {
         .split('/')
         .where((s) => s.isNotEmpty)
         .toList();
+    final sideLabel = side == PaneSide.left ? 'LEFT' : 'RIGHT';
 
     return Container(
-      height: 30,
+      height: 32,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: isActive ? p.headerBg : p.footerBg,
@@ -164,6 +284,28 @@ class MacosPaneView extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Explicit Active/Inactive Pane Identity Badge
+          Container(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isActive ? p.primaryAccent : p.paneBgOdd,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isActive ? p.primaryAccent : p.dividerColor,
+                width: 1,
+              ),
+            ),
+            child: Text(
+              isActive ? '● $sideLabel' : '○ $sideLabel',
+              style: TextStyle(
+                color: isActive ? p.cursorActiveText : p.mutedText,
+                fontSize: 10,
+                fontFamily: 'Menlo',
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
           GestureDetector(
             onTap: () {
               controller.setActiveSide(side);
@@ -274,7 +416,6 @@ class MacosPaneView extends StatelessWidget {
                                 ? p.cursorActiveText
                                 : p.semiHighlightedText,
                             fontSize: 11.5,
-                            fontFamily: 'Menlo',
                             fontWeight: i == segments.length - 1
                                 ? FontWeight.w700
                                 : FontWeight.w500,
@@ -288,6 +429,30 @@ class MacosPaneView extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => controller.startInlineRename(side: side),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: p.paneBgOdd,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: p.dividerColor,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'F2 Rename',
+                style: TextStyle(
+                  color: p.fileImportantText,
+                  fontSize: 10.5,
+                  fontFamily: 'Menlo',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 5),
           GestureDetector(
             onTap: () => controller.openFavoritesHotlist(side: side),
             child: Container(
@@ -345,7 +510,7 @@ class MacosPaneView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Icon(
-                CupertinoIcons.pencil,
+                CupertinoIcons.compass,
                 size: 12,
                 color: p.primaryAccent,
               ),
@@ -381,7 +546,7 @@ class MacosPaneView extends StatelessWidget {
         onTap: () => controller.toggleSort(side, field),
         child: Container(
           alignment: alignment,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             border: Border(right: BorderSide(color: p.dividerColor, width: 1)),
           ),
@@ -403,7 +568,7 @@ class MacosPaneView extends StatelessWidget {
     }
 
     return Container(
-      height: 24,
+      height: 25,
       decoration: BoxDecoration(
         color: p.headerBg,
         border: Border(bottom: BorderSide(color: p.dividerColor, width: 1)),
@@ -411,27 +576,14 @@ class MacosPaneView extends StatelessWidget {
       child: Row(
         children: [
           headerCell('Name', SortField.name, flex: 5),
-          headerCell('Ext', SortField.extension, width: 68),
+          headerCell('Type', SortField.extension, width: 74),
           headerCell(
             'Size',
             SortField.size,
-            width: 92,
+            width: 96,
             alignment: Alignment.centerRight,
           ),
-          headerCell('Modified', SortField.modified, width: 126),
-          Container(
-            width: 86,
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              'Attr',
-              style: TextStyle(
-                color: p.mutedText,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          headerCell('Modified', SortField.modified, width: 138),
         ],
       ),
     );
@@ -461,20 +613,30 @@ class MacosPaneView extends StatelessWidget {
           return const SizedBox.shrink();
         }
         final isCursor = index == tab.cursorIndex;
+        final isRenaming = controller.isRowRenaming(side, index);
         final highlightQuery =
             (isActive && controller.typeAheadQuery.isNotEmpty)
             ? controller.typeAheadQuery
             : summary.filterQuery;
+
         return _MacosFileRow(
+          controller: controller,
+          side: side,
           palette: p,
           entry: entry,
           index: index,
           isCursor: isCursor,
           isPaneActive: isActive,
+          isRenaming: isRenaming,
           highlightQuery: highlightQuery,
-          onTap: () =>
-              controller.setCursor(side, index, ensureVisible: false),
+          onTap: () {
+            if (controller.isInlineRenaming && !isRenaming) {
+              controller.commitInlineRename();
+            }
+            controller.setCursor(side, index, ensureVisible: false);
+          },
           onDoubleTap: () {
+            if (isRenaming) return;
             controller.setCursor(side, index, ensureVisible: false);
             controller.activateFocusedEntry();
           },
@@ -535,48 +697,67 @@ class MacosPaneView extends StatelessWidget {
   Widget _buildPaneFooter(TcThemePalette p, PaneSummaryModel summary) {
     final hasSel = summary.selectedFiles > 0 || summary.selectedDirs > 0;
     final text = hasSel
-        ? '★ Selected: ${formatBytes(summary.selectedBytes)} in ${summary.selectedFiles} file(s), ${summary.selectedDirs} dir(s)'
-        : '${formatBytes(summary.totalBytes)} in ${summary.totalFiles} file(s), ${summary.totalDirs} dir(s)';
+        ? '★ Selected: ${formatBytes(summary.selectedBytes)} in ${summary.selectedFiles} file(s), ${summary.selectedDirs} folder(s)'
+        : '${summary.totalDirs} folder(s), ${summary.totalFiles} file(s) (${formatBytes(summary.totalBytes)})';
 
     return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: 25,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: p.footerBg,
         border: Border(top: BorderSide(color: p.dividerColor, width: 1)),
       ),
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: TextStyle(
-          color: hasSel ? p.selectedText : p.semiHighlightedText,
-          fontSize: 11,
-          fontFamily: 'Menlo',
-          fontWeight: hasSel ? FontWeight.w700 : FontWeight.w500,
-        ),
-        overflow: TextOverflow.ellipsis,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: hasSel ? p.selectedText : p.semiHighlightedText,
+                fontSize: 11.5,
+                fontWeight: hasSel ? FontWeight.w700 : FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            'F2 / ⇧F6: Rename',
+            style: TextStyle(
+              color: p.mutedText,
+              fontSize: 10.5,
+              fontFamily: 'Menlo',
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _MacosFileRow extends StatelessWidget {
+  final CommanderController controller;
+  final PaneSide side;
   final TcThemePalette palette;
   final DirEntryModel entry;
   final int index;
   final bool isCursor;
   final bool isPaneActive;
+  final bool isRenaming;
   final String highlightQuery;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
   final GestureTapDownCallback onSecondaryTapDown;
 
   const _MacosFileRow({
+    required this.controller,
+    required this.side,
     required this.palette,
     required this.entry,
     required this.index,
     required this.isCursor,
     required this.isPaneActive,
+    required this.isRenaming,
     required this.highlightQuery,
     required this.onTap,
     required this.onDoubleTap,
@@ -588,7 +769,9 @@ class _MacosFileRow extends StatelessWidget {
     final activeCur = isCursor && isPaneActive;
 
     Color bgColor;
-    if (activeCur) {
+    if (isRenaming) {
+      bgColor = palette.selectedRowBg;
+    } else if (activeCur) {
       bgColor = palette.cursorActiveBg;
     } else if (isCursor && !isPaneActive) {
       bgColor = palette.cursorInactiveBg;
@@ -598,24 +781,22 @@ class _MacosFileRow extends StatelessWidget {
       bgColor = index.isEven ? palette.paneBgEven : palette.paneBgOdd;
     }
 
-    // 1. IMPORTANT: Primary Name & Icon Color
     final nameColor = palette.resolveEntryNameColor(
       entry,
-      isActiveCursor: activeCur,
+      isActiveCursor: activeCur && !isRenaming,
     );
-
-    // 2. SEMI-HIGHLIGHTED: Extension & Size
-    final extColor = palette.resolveExtColor(entry, isActiveCursor: activeCur);
+    final extColor = palette.resolveExtColor(
+      entry,
+      isActiveCursor: activeCur && !isRenaming,
+    );
     final sizeColor = palette.resolveSizeColor(
       entry,
-      isActiveCursor: activeCur,
+      isActiveCursor: activeCur && !isRenaming,
     );
-
-    // 3. LESS IMPORTANT (SUBDUED): Date & Permissions
-    final metaColor = activeCur
-        ? palette.cursorActiveText.withValues(alpha: 0.78)
+    final metaColor = (activeCur && !isRenaming)
+        ? palette.cursorActiveText.withValues(alpha: 0.82)
         : entry.selected
-        ? palette.selectedText.withValues(alpha: 0.8)
+        ? palette.selectedText.withValues(alpha: 0.85)
         : palette.mutedText;
 
     final iconData = entry.isParent
@@ -634,13 +815,13 @@ class _MacosFileRow extends StatelessWidget {
         ? CupertinoIcons.link
         : CupertinoIcons.doc_text_fill;
 
-    final iconColor = activeCur
+    final iconColor = (activeCur && !isRenaming)
         ? palette.cursorActiveText
         : entry.selected
         ? palette.selectedText
         : entry.isDir
         ? palette.dirIcon
-        : nameColor.withValues(alpha: 0.85);
+        : nameColor.withValues(alpha: 0.9);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -650,64 +831,116 @@ class _MacosFileRow extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: bgColor,
-          border: activeCur
+          border: (activeCur || isRenaming)
               ? Border(
                   left: BorderSide(
-                    color: palette.cursorActiveBorder,
-                    width: 3.0,
+                    color: isRenaming
+                        ? palette.selectedText
+                        : palette.cursorActiveBorder,
+                    width: 3.5,
                   ),
                 )
               : null,
         ),
-        padding: EdgeInsets.only(left: activeCur ? 5 : 8, right: 8),
+        padding: EdgeInsets.only(
+          left: (activeCur || isRenaming) ? 6.5 : 10,
+          right: 10,
+        ),
         child: Row(
           children: [
             Expanded(
               flex: 5,
-              child: Row(
-                children: [
-                  Icon(iconData, size: 13.5, color: iconColor),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: buildHighlightedNameText(
-                      displayText: entry.isDir && !entry.isParent
-                          ? '[${entry.name}]'
-                          : entry.stem,
-                      query: entry.isParent ? '' : highlightQuery,
-                      palette: palette,
-                      isActiveCursor: activeCur,
-                      baseStyle: TextStyle(
-                        color: nameColor,
-                        fontSize: 12,
-                        fontFamily: 'Menlo',
-                        fontWeight:
-                            entry.isDir || entry.selected || activeCur
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
+              child: isRenaming
+                  ? _buildInlineRenameEditor(iconData)
+                  : Row(
+                      children: [
+                        Icon(iconData, size: 15, color: iconColor),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: buildHighlightedNameText(
+                            displayText: entry.isDir
+                                ? entry.name
+                                : entry.stem,
+                            extSuffix: (!entry.isDir && !entry.isParent)
+                                ? entry.ext
+                                : '',
+                            extColor: extColor,
+                            query: entry.isParent ? '' : highlightQuery,
+                            palette: palette,
+                            isActiveCursor: activeCur,
+                            baseStyle: TextStyle(
+                              color: nameColor,
+                              fontSize: 12.5,
+                              fontWeight:
+                                  entry.isDir || entry.selected || activeCur
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (activeCur && !entry.isParent) ...[
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => controller.startInlineRename(
+                              side: side,
+                              rowIndex: index,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5.5,
+                                vertical: 1.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: palette.cursorActiveText.withValues(
+                                  alpha: 0.18,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '✎ Rename',
+                                style: TextStyle(
+                                  color: palette.cursorActiveText,
+                                  fontSize: 10,
+                                  fontFamily: 'Menlo',
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
             SizedBox(
-              width: 68,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  entry.ext,
-                  style: TextStyle(
-                    color: extColor,
-                    fontSize: 11.5,
-                    fontFamily: 'Menlo',
-                    fontWeight: FontWeight.w600,
+              width: 74,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1.5,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  decoration: BoxDecoration(
+                    color: (activeCur && !isRenaming)
+                        ? palette.cursorActiveText.withValues(alpha: 0.16)
+                        : palette.headerBg,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    entry.typeBadge,
+                    style: TextStyle(
+                      color: extColor,
+                      fontSize: 10,
+                      fontFamily: 'Menlo',
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ),
             SizedBox(
-              width: 92,
+              width: 96,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text(
@@ -728,30 +961,15 @@ class _MacosFileRow extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: 126,
+              width: 138,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.only(left: 8),
                 child: Text(
                   entry.displayDate,
+                  textAlign: TextAlign.right,
                   style: TextStyle(
                     color: metaColor,
-                    fontSize: 11,
-                    fontFamily: 'Menlo',
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 86,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  entry.permissions,
-                  style: TextStyle(
-                    color: metaColor.withValues(alpha: 0.75),
-                    fontSize: 10.5,
-                    fontFamily: 'Menlo',
+                    fontSize: 11.5,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -760,6 +978,77 @@ class _MacosFileRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInlineRenameEditor(IconData iconData) {
+    return Row(
+      children: [
+        Icon(iconData, size: 15, color: palette.selectedText),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SizedBox(
+            height: 23,
+            child: CupertinoTextField(
+              controller: controller.inlineRenameController,
+              focusNode: controller.inlineRenameFocusNode,
+              autofocus: true,
+              style: TextStyle(
+                color: palette.fileImportantText,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: palette.paneBgEven,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: palette.primaryAccent, width: 1.5),
+              ),
+              onSubmitted: (_) => controller.commitInlineRename(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 5),
+        GestureDetector(
+          onTap: controller.commitInlineRename,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: palette.primaryAccent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '↵ Save',
+              style: TextStyle(
+                color: palette.cursorActiveText,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: controller.cancelInlineRename,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: palette.headerBg,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: palette.dividerColor, width: 1),
+            ),
+            child: Text(
+              'Esc',
+              style: TextStyle(
+                color: palette.mutedText,
+                fontSize: 10,
+                fontFamily: 'Menlo',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

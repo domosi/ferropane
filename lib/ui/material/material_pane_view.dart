@@ -57,53 +57,200 @@ class MaterialPaneView extends StatelessWidget {
     );
   }
 
+  IconData _iconForTabPath(String path, bool isArchive) {
+    if (isArchive) return Icons.folder_zip_rounded;
+    final lower = path.toLowerCase();
+    if (lower.endsWith('/downloads')) return Icons.download_rounded;
+    if (lower.endsWith('/desktop')) return Icons.desktop_mac_rounded;
+    if (lower.endsWith('/documents')) return Icons.description_rounded;
+    if (lower == '/applications') return Icons.apps_rounded;
+    if (lower.startsWith('/volumes')) return Icons.storage_rounded;
+    if (lower.split('/').where((s) => s.isNotEmpty).length <= 2) {
+      return Icons.home_rounded;
+    }
+    return Icons.folder_rounded;
+  }
+
+  /// Design B: 2-Line Context Tabs (Folder Name + Item Count on top, Parent Path below)
   Widget _buildMaterialTabBar(BuildContext context, TcThemePalette p) {
     final tabs = controller.tabsFor(side);
     final activeIdx = controller.activeTabIndexFor(side);
+    final activeSurface = isActive ? p.headerBg : p.paneBgEven;
 
     return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      color: p.footerBg,
+      height: 46,
+      padding: const EdgeInsets.only(left: 6, right: 4, top: 4),
+      color: p.windowBg,
       child: Row(
         children: [
           Expanded(
-            child: ListView.separated(
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: tabs.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
               itemBuilder: (context, idx) {
                 final t = tabs[idx];
                 final selected = idx == activeIdx;
-                return InputChip(
-                  selected: selected,
-                  showCheckmark: false,
-                  selectedColor: p.headerBg,
-                  backgroundColor: p.paneBgEven,
-                  side: BorderSide(
-                    color: selected && isActive
-                        ? p.primaryAccent
-                        : p.dividerColor,
-                    width: selected ? 1.4 : 1.0,
-                  ),
-                  avatar: Icon(
-                    Icons.folder_rounded,
-                    size: 15,
-                    color: selected ? p.dirIcon : p.mutedText,
-                  ),
-                  label: Text(
-                    t.title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: selected ? p.fileImportantText : p.mutedText,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                final tabIcon = _iconForTabPath(
+                  t.displayPath,
+                  t.isInsideArchive,
+                );
+
+                return Opacity(
+                  opacity: selected ? 1.0 : 0.68,
+                  child: InkWell(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(10),
+                    ),
+                    onTap: () => controller.selectTab(side, idx),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 140,
+                        maxWidth: 240,
+                      ),
+                      margin: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected ? activeSurface : p.footerBg,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(10),
+                        ),
+                        border: Border(
+                          top: BorderSide(
+                            color: selected
+                                ? (isActive
+                                      ? p.primaryAccent
+                                      : p.semiHighlightedText)
+                                : p.dividerColor,
+                            width: selected ? 3.0 : 1.0,
+                          ),
+                          left: BorderSide(
+                            color: selected
+                                ? (isActive
+                                      ? p.primaryAccent
+                                      : p.semiHighlightedText)
+                                : p.dividerColor,
+                            width: 1,
+                          ),
+                          right: BorderSide(
+                            color: selected
+                                ? (isActive
+                                      ? p.primaryAccent
+                                      : p.semiHighlightedText)
+                                : p.dividerColor,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected && isActive
+                                  ? p.primaryAccent
+                                  : p.paneBgOdd,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${idx + 1}',
+                              style: TextStyle(
+                                fontFamily: 'Menlo',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: selected && isActive
+                                    ? p.cursorActiveText
+                                    : p.mutedText,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            tabIcon,
+                            size: 15,
+                            color: selected ? p.dirIcon : p.mutedText,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        t.title,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: selected
+                                              ? FontWeight.w800
+                                              : FontWeight.w600,
+                                          color: selected
+                                              ? p.fileImportantText
+                                              : p.semiHighlightedText,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 0.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: p.paneBgOdd,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '${t.itemCount}',
+                                        style: TextStyle(
+                                          fontFamily: 'Menlo',
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: selected
+                                              ? p.primaryAccent
+                                              : p.mutedText,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  t.parentContextLabel,
+                                  style: TextStyle(
+                                    fontFamily: 'Menlo',
+                                    fontSize: 9.5,
+                                    color: p.mutedText,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (tabs.length > 1) ...[
+                            const SizedBox(width: 6),
+                            InkWell(
+                              onTap: () => controller.closeTab(side, idx),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 13,
+                                color: p.mutedText,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => controller.selectTab(side, idx),
-                  onDeleted: tabs.length > 1
-                      ? () => controller.closeTab(side, idx)
-                      : null,
                 );
               },
             ),
@@ -111,7 +258,11 @@ class MaterialPaneView extends StatelessWidget {
           IconButton(
             tooltip: 'New Tab (Cmd+T)',
             visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.add_rounded, size: 18, color: p.primaryAccent),
+            icon: Icon(
+              Icons.add_circle_rounded,
+              size: 17,
+              color: p.primaryAccent,
+            ),
             onPressed: () => controller.addNewTab(side: side),
           ),
         ],
@@ -128,11 +279,7 @@ class MaterialPaneView extends StatelessWidget {
         .split('/')
         .where((s) => s.isNotEmpty)
         .toList();
-    final usedRatio = summary.volumeTotalBytes > 0
-        ? ((summary.volumeTotalBytes - summary.volumeFreeBytes) /
-                  summary.volumeTotalBytes)
-              .clamp(0.0, 1.0)
-        : 0.0;
+    final sideLabel = side == PaneSide.left ? 'LEFT' : 'RIGHT';
 
     return Container(
       height: 34,
@@ -143,6 +290,27 @@ class MaterialPaneView extends StatelessWidget {
       ),
       child: Row(
         children: [
+          Container(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isActive ? p.primaryAccent : p.paneBgOdd,
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(
+                color: isActive ? p.primaryAccent : p.dividerColor,
+                width: 1,
+              ),
+            ),
+            child: Text(
+              isActive ? '● $sideLabel' : '○ $sideLabel',
+              style: TextStyle(
+                fontFamily: 'Menlo',
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: isActive ? p.cursorActiveText : p.mutedText,
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'Parent Directory (Backspace)',
             visualDensity: VisualDensity.compact,
@@ -254,7 +422,6 @@ class MaterialPaneView extends StatelessWidget {
                         child: Text(
                           segments[i],
                           style: TextStyle(
-                            fontFamily: 'Menlo',
                             fontSize: 11.5,
                             fontWeight: i == segments.length - 1
                                 ? FontWeight.w700
@@ -268,6 +435,28 @@ class MaterialPaneView extends StatelessWidget {
                     ),
                   ],
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () => controller.startInlineRename(side: side),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.paneBgOdd,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: p.dividerColor, width: 1),
+              ),
+              child: Text(
+                'F2 Rename',
+                style: TextStyle(
+                  fontFamily: 'Menlo',
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: p.fileImportantText,
+                ),
               ),
             ),
           ),
@@ -319,7 +508,7 @@ class MaterialPaneView extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           IconButton(
-            tooltip: 'Edit Path (Cmd+G)',
+            tooltip: 'Go to Path (Cmd+G)',
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
@@ -334,19 +523,6 @@ class MaterialPaneView extends StatelessWidget {
             },
           ),
           const SizedBox(width: 6),
-          SizedBox(
-            width: 52,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: usedRatio,
-                minHeight: 5,
-                color: p.primaryAccent,
-                backgroundColor: p.dividerColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
           Text(
             '${formatBytes(summary.volumeFreeBytes)} free',
             style: TextStyle(
@@ -366,25 +542,25 @@ class MaterialPaneView extends StatelessWidget {
     TcThemePalette p,
     PaneSummaryModel summary,
   ) {
-    Widget headerCell(
+    Widget colHeader(
       String label,
       SortField field, {
       int flex = 1,
       double? width,
       Alignment alignment = Alignment.centerLeft,
     }) {
-      final isSorted = summary.sortField == field;
-      final icon = isSorted
+      final sorted = summary.sortField == field;
+      final icon = sorted
           ? (summary.sortAscending
                 ? Icons.arrow_upward_rounded
                 : Icons.arrow_downward_rounded)
           : null;
 
-      final child = InkWell(
+      final cell = InkWell(
         onTap: () => controller.toggleSort(side, field),
         child: Container(
           alignment: alignment,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -392,21 +568,21 @@ class MaterialPaneView extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 11.5,
-                  fontWeight: isSorted ? FontWeight.w800 : FontWeight.w600,
-                  color: isSorted ? p.primaryAccent : p.semiHighlightedText,
+                  fontWeight: sorted ? FontWeight.w800 : FontWeight.w600,
+                  color: sorted ? p.primaryAccent : p.semiHighlightedText,
                 ),
               ),
               if (icon != null) ...[
                 const SizedBox(width: 3),
-                Icon(icon, size: 13, color: p.primaryAccent),
+                Icon(icon, size: 12, color: p.primaryAccent),
               ],
             ],
           ),
         ),
       );
 
-      if (width != null) return SizedBox(width: width, child: child);
-      return Expanded(flex: flex, child: child);
+      if (width != null) return SizedBox(width: width, child: cell);
+      return Expanded(flex: flex, child: cell);
     }
 
     return Container(
@@ -417,28 +593,19 @@ class MaterialPaneView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          headerCell('Name', SortField.name, flex: 5),
-          headerCell('Ext', SortField.extension, width: 70),
-          headerCell(
+          colHeader('Name', SortField.name, flex: 5),
+          colHeader('Type', SortField.extension, width: 76),
+          colHeader(
             'Size',
             SortField.size,
-            width: 96,
+            width: 98,
             alignment: Alignment.centerRight,
           ),
-          headerCell('Modified', SortField.modified, width: 128),
-          SizedBox(
-            width: 88,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                'Perms',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: p.mutedText,
-                ),
-              ),
-            ),
+          colHeader(
+            'Modified',
+            SortField.modified,
+            width: 140,
+            alignment: Alignment.centerRight,
           ),
         ],
       ),
@@ -454,211 +621,329 @@ class MaterialPaneView extends StatelessWidget {
       return Center(
         child: Text(
           summary.errorMessage!,
-          style: TextStyle(color: p.dangerColor, fontSize: 13),
+          style: TextStyle(color: p.dangerColor),
         ),
       );
     }
 
-    return Material(
-      type: MaterialType.transparency,
-      child: ListView.builder(
-        controller: tab.scrollController,
-        itemExtent: CommanderController.rowExtent,
-        itemCount: summary.totalRows,
-        itemBuilder: (context, index) {
-          final entry = controller.getRow(tab, index);
-          if (entry == null) return const SizedBox.shrink();
-          final isCursor = index == tab.cursorIndex;
-          final activeCur = isCursor && isActive;
+    return ListView.builder(
+      controller: tab.scrollController,
+      itemExtent: CommanderController.rowExtent,
+      itemCount: summary.totalRows,
+      itemBuilder: (context, index) {
+        final entry = controller.getRow(tab, index);
+        if (entry == null) return const SizedBox.shrink();
+        final isCursor = index == tab.cursorIndex;
+        final isRenaming = controller.isRowRenaming(side, index);
+        final activeCur = isCursor && isActive && !isRenaming;
 
-          Color rowBg;
-          if (activeCur) {
-            rowBg = p.cursorActiveBg;
-          } else if (isCursor && !isActive) {
-            rowBg = p.cursorInactiveBg;
-          } else if (entry.selected) {
-            rowBg = p.selectedRowBg;
-          } else {
-            rowBg = index.isEven ? p.paneBgEven : p.paneBgOdd;
-          }
+        Color rowBg;
+        if (isRenaming) {
+          rowBg = p.selectedRowBg;
+        } else if (activeCur) {
+          rowBg = p.cursorActiveBg;
+        } else if (isCursor && !isActive) {
+          rowBg = p.cursorInactiveBg;
+        } else if (entry.selected) {
+          rowBg = p.selectedRowBg;
+        } else {
+          rowBg = index.isEven ? p.paneBgEven : p.paneBgOdd;
+        }
 
-          // 1. IMPORTANT: Primary Name & Icon Color
-          final nameColor = p.resolveEntryNameColor(
-            entry,
-            isActiveCursor: activeCur,
-          );
+        final nameColor = p.resolveEntryNameColor(
+          entry,
+          isActiveCursor: activeCur,
+        );
+        final extColor = p.resolveExtColor(entry, isActiveCursor: activeCur);
+        final sizeColor = p.resolveSizeColor(entry, isActiveCursor: activeCur);
+        final metaColor = activeCur
+            ? p.cursorActiveText.withValues(alpha: 0.82)
+            : entry.selected
+            ? p.selectedText.withValues(alpha: 0.85)
+            : p.mutedText;
 
-          // 2. SEMI-HIGHLIGHTED: Extension & Size
-          final extColor = p.resolveExtColor(entry, isActiveCursor: activeCur);
-          final sizeColor = p.resolveSizeColor(
-            entry,
-            isActiveCursor: activeCur,
-          );
+        final icon = entry.isParent
+            ? Icons.subdirectory_arrow_left_rounded
+            : entry.isAppBundle
+            ? Icons.apps_rounded
+            : entry.isDir
+            ? Icons.folder_rounded
+            : entry.isArchive
+            ? Icons.folder_zip_rounded
+            : entry.isDiskImage
+            ? Icons.album_rounded
+            : entry.isExecutableScript
+            ? Icons.terminal_rounded
+            : entry.isSymlink
+            ? Icons.link_rounded
+            : Icons.insert_drive_file_rounded;
 
-          // 3. LESS IMPORTANT (SUBDUED): Date & Permissions
-          final metaColor = activeCur
-              ? p.cursorActiveText.withValues(alpha: 0.78)
-              : entry.selected
-              ? p.selectedText.withValues(alpha: 0.8)
-              : p.mutedText;
+        final iconColor = activeCur
+            ? p.cursorActiveText
+            : entry.selected
+            ? p.selectedText
+            : entry.isDir
+            ? p.dirIcon
+            : nameColor.withValues(alpha: 0.9);
 
-          final icon = entry.isParent
-              ? Icons.subdirectory_arrow_left_rounded
-              : entry.isAppBundle
-              ? Icons.apps_rounded
-              : entry.isDir
-              ? Icons.folder_rounded
-              : entry.isArchive
-              ? Icons.folder_zip_rounded
-              : entry.isDiskImage
-              ? Icons.album_rounded
-              : entry.isExecutableScript
-              ? Icons.terminal_rounded
-              : entry.isSymlink
-              ? Icons.link_rounded
-              : Icons.insert_drive_file_rounded;
+        final highlightQuery =
+            (isActive && controller.typeAheadQuery.isNotEmpty)
+            ? controller.typeAheadQuery
+            : summary.filterQuery;
 
-          final iconColor = activeCur
-              ? p.cursorActiveText
-              : entry.selected
-              ? p.selectedText
-              : entry.isDir
-              ? p.dirIcon
-              : nameColor.withValues(alpha: 0.85);
-
-          return InkWell(
-            onTap: () =>
-                controller.setCursor(side, index, ensureVisible: false),
-            onDoubleTap: () {
-              controller.setCursor(side, index, ensureVisible: false);
-              controller.activateFocusedEntry();
-            },
-            onSecondaryTapDown: (details) => controller.showRowContextMenu(
-              side,
-              index,
-              details.globalPosition,
+        return InkWell(
+          onTap: () {
+            if (controller.isInlineRenaming && !isRenaming) {
+              controller.commitInlineRename();
+            }
+            controller.setCursor(side, index, ensureVisible: false);
+          },
+          onDoubleTap: () {
+            if (isRenaming) return;
+            controller.setCursor(side, index, ensureVisible: false);
+            controller.activateFocusedEntry();
+          },
+          onSecondaryTapDown: (details) => controller.showRowContextMenu(
+            side,
+            index,
+            details.globalPosition,
+          ),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: rowBg,
+              border: (activeCur || isRenaming)
+                  ? Border(
+                      left: BorderSide(
+                        color: isRenaming
+                            ? p.selectedText
+                            : p.cursorActiveBorder,
+                        width: 3.5,
+                      ),
+                    )
+                  : null,
             ),
-            child: Ink(
-              decoration: BoxDecoration(
-                color: rowBg,
-                border: activeCur
-                    ? Border(
-                        left: BorderSide(
-                          color: p.cursorActiveBorder,
-                          width: 3.0,
-                        ),
-                      )
-                    : null,
-              ),
-              padding: EdgeInsets.only(left: activeCur ? 5 : 8, right: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: Row(
-                      children: [
-                        Icon(icon, size: 15, color: iconColor),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: buildHighlightedNameText(
-                            displayText: entry.isDir && !entry.isParent
-                                ? '[${entry.name}]'
-                                : entry.stem,
-                            query: entry.isParent
-                                ? ''
-                                : ((isActive &&
-                                          controller.typeAheadQuery.isNotEmpty)
-                                      ? controller.typeAheadQuery
-                                      : summary.filterQuery),
-                            palette: p,
-                            isActiveCursor: activeCur,
-                            baseStyle: TextStyle(
-                              fontFamily: 'Menlo',
-                              fontSize: 12,
-                              color: nameColor,
-                              fontWeight:
-                                  entry.isDir || entry.selected || activeCur
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+            padding: EdgeInsets.only(
+              left: (activeCur || isRenaming) ? 6.5 : 10,
+              right: 10,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: isRenaming
+                      ? _buildMaterialInlineRenameEditor(p, icon)
+                      : Row(
+                          children: [
+                            Icon(icon, size: 16, color: iconColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: buildHighlightedNameText(
+                                displayText: entry.isDir
+                                    ? entry.name
+                                    : entry.stem,
+                                extSuffix: (!entry.isDir && !entry.isParent)
+                                    ? entry.ext
+                                    : '',
+                                extColor: extColor,
+                                query: entry.isParent ? '' : highlightQuery,
+                                palette: p,
+                                isActiveCursor: activeCur,
+                                baseStyle: TextStyle(
+                                  fontSize: 12.5,
+                                  color: nameColor,
+                                  fontWeight:
+                                      entry.isDir ||
+                                          entry.selected ||
+                                          activeCur
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (activeCur && !entry.isParent) ...[
+                              const SizedBox(width: 6),
+                              InkWell(
+                                onTap: () => controller.startInlineRename(
+                                  side: side,
+                                  rowIndex: index,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: p.cursorActiveText.withValues(
+                                      alpha: 0.18,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '✎ Rename',
+                                    style: TextStyle(
+                                      fontFamily: 'Menlo',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: p.cursorActiveText,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                ),
+                SizedBox(
+                  width: 76,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: activeCur
+                            ? p.cursorActiveText.withValues(alpha: 0.16)
+                            : p.headerBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                       child: Text(
-                        entry.ext,
+                        entry.typeBadge,
                         style: TextStyle(
                           fontFamily: 'Menlo',
-                          fontSize: 11.5,
+                          fontSize: 10,
                           color: extColor,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 96,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Text(
-                        entry.displaySize,
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontFamily: 'Menlo',
-                          fontSize: 11.5,
-                          color: sizeColor,
-                          fontWeight:
-                              (entry.size >= 10 * 1024 * 1024 ||
-                                  entry.sizeCalculated && entry.isDir)
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(
+                  width: 98,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      entry.displaySize,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontFamily: 'Menlo',
+                        fontSize: 11.5,
+                        color: sizeColor,
+                        fontWeight:
+                            (entry.size >= 10 * 1024 * 1024 ||
+                                entry.sizeCalculated && entry.isDir)
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(
-                    width: 128,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Text(
-                        entry.displayDate,
-                        style: TextStyle(
-                          fontFamily: 'Menlo',
-                          fontSize: 11,
-                          color: metaColor,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(
+                  width: 140,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      entry.displayDate,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: metaColor,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(
-                    width: 88,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        entry.permissions,
-                        style: TextStyle(
-                          fontFamily: 'Menlo',
-                          fontSize: 10.5,
-                          color: metaColor.withValues(alpha: 0.75),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMaterialInlineRenameEditor(TcThemePalette p, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: p.selectedText),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SizedBox(
+            height: 23,
+            child: TextField(
+              controller: controller.inlineRenameController,
+              focusNode: controller.inlineRenameFocusNode,
+              autofocus: true,
+              style: TextStyle(
+                color: p.fileImportantText,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                filled: true,
+                fillColor: p.paneBgEven,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 3,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: BorderSide(color: p.primaryAccent, width: 1.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: BorderSide(color: p.primaryAccent, width: 1.5),
+                ),
+              ),
+              onSubmitted: (_) => controller.commitInlineRename(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 5),
+        InkWell(
+          onTap: controller.commitInlineRename,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: p.primaryAccent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '↵ Save',
+              style: TextStyle(
+                color: p.cursorActiveText,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          );
-        },
-      ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: controller.cancelInlineRename,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: p.headerBg,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: p.dividerColor, width: 1),
+            ),
+            child: Text(
+              'Esc',
+              style: TextStyle(
+                color: p.mutedText,
+                fontSize: 10,
+                fontFamily: 'Menlo',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -668,15 +953,15 @@ class MaterialPaneView extends StatelessWidget {
     PaneSummaryModel summary,
   ) {
     return Container(
-      height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: p.headerBg,
         border: Border(top: BorderSide(color: p.primaryAccent, width: 1.5)),
       ),
       child: Row(
         children: [
-          Icon(Icons.filter_alt_rounded, size: 15, color: p.primaryAccent),
+          Icon(Icons.filter_list_rounded, size: 15, color: p.primaryAccent),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -687,9 +972,9 @@ class MaterialPaneView extends StatelessWidget {
                 color: p.fileImportantText,
               ),
               decoration: InputDecoration(
-                hintText: 'Quick filter files (Esc to close)...',
-                hintStyle: TextStyle(color: p.mutedText, fontSize: 12),
                 isDense: true,
+                hintText: 'Quick filter files (Esc to clear)...',
+                hintStyle: TextStyle(fontSize: 12, color: p.mutedText),
                 border: InputBorder.none,
               ),
               onChanged: controller.setQuickFilter,
@@ -707,26 +992,39 @@ class MaterialPaneView extends StatelessWidget {
   ) {
     final hasSel = summary.selectedFiles > 0 || summary.selectedDirs > 0;
     final text = hasSel
-        ? '★ Selected: ${formatBytes(summary.selectedBytes)} in ${summary.selectedFiles} file(s), ${summary.selectedDirs} dir(s)'
-        : '${formatBytes(summary.totalBytes)} in ${summary.totalFiles} file(s), ${summary.totalDirs} dir(s)';
+        ? '★ Selected: ${formatBytes(summary.selectedBytes)} in ${summary.selectedFiles} file(s), ${summary.selectedDirs} folder(s)'
+        : '${summary.totalDirs} folder(s), ${summary.totalFiles} file(s) (${formatBytes(summary.totalBytes)})';
 
     return Container(
       height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: p.footerBg,
         border: Border(top: BorderSide(color: p.dividerColor, width: 1)),
       ),
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontFamily: 'Menlo',
-          fontSize: 11,
-          fontWeight: hasSel ? FontWeight.w700 : FontWeight.w500,
-          color: hasSel ? p.selectedText : p.semiHighlightedText,
-        ),
-        overflow: TextOverflow.ellipsis,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: hasSel ? FontWeight.w700 : FontWeight.w500,
+                color: hasSel ? p.selectedText : p.semiHighlightedText,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            'F2 / ⇧F6: Rename',
+            style: TextStyle(
+              fontFamily: 'Menlo',
+              fontSize: 10.5,
+              color: p.mutedText,
+            ),
+          ),
+        ],
       ),
     );
   }
